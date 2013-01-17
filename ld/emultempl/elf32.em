@@ -2447,14 +2447,10 @@ EOF
 if test x"$GENERATE_SHLIB_SCRIPT" = xyes; then
 fragment <<EOF
   fprintf (file, _("\
-  -z norelro                  Don't create RELRO program header\n"));
-  fprintf (file, _("\
   -z now                      Mark object non-lazy runtime binding\n"));
   fprintf (file, _("\
   -z origin                   Mark object requiring immediate \$ORIGIN\n\
                                 processing at runtime\n"));
-  fprintf (file, _("\
-  -z relro                    Create RELRO program header\n"));
 EOF
 fi
 
