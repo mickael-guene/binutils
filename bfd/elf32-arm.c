@@ -2105,7 +2105,28 @@ static const unsigned long dl_tlsdesc_lazy_trampoline [] =
     0x00000018, /* 4:   .word  _GLOBAL_OFFSET_TABLE_ - 2b - 8 */ 
   };
 
-#ifdef FOUR_WORD_PLT
+#define FIVE_WORD_PLT
+#ifdef FIVE_WORD_PLT
+
+/* do we need a plt0 entry ? */
+static const bfd_vma elf32_arm_plt0_entry [] =
+  {
+    0xe52de004,    /* str   lr, [sp, #-4]! */
+    0xe59fe010,    /* ldr   lr, [pc, #16]  */
+    0xe08fe00e,    /* add   lr, pc, lr     */
+    0xe5bef008,    /* ldr   pc, [lr, #8]!  */
+  };
+
+static const bfd_vma elf32_arm_plt_entry [] =
+  {
+    0xe59fc008,    /* ldr     r12, .L1 */
+    0xe08cc009,    /* add     r12, r12, r9 */
+    0xe59c9004,    /* ldr     r9, [r12, #4] */
+    0xe59cf000,    /* ldr     pc, [r12] */
+    0x00000000,    /* L1.     .word   foo@GOTOFFFUNCDESC */
+  };
+
+#elif FOUR_WORD_PLT
 
 /* The first entry in a procedure linkage table looks like
    this.  It is set up so that any shared library function that is
@@ -3406,7 +3427,10 @@ elf32_arm_link_hash_table_create (bfd *abfd)
   ret->byteswap_code = 0;
   ret->target1_is_rel = 0;
   ret->target2_reloc = R_ARM_NONE;
-#ifdef FOUR_WORD_PLT
+#ifdef FIVE_WORD_PLT
+  ret->plt_header_size = 16;
+  ret->plt_entry_size = 20;
+#elif FOUR_WORD_PLT
   ret->plt_header_size = 16;
   ret->plt_entry_size = 16;
 #else
@@ -7573,6 +7597,14 @@ elf32_arm_populate_plt_entry (bfd *output_bfd, struct bfd_link_info *info,
 	}
       else
 	{
+#ifdef FIVE_WORD_PLT
+   (void) got_displacement;
+   bfd_put_32 (output_bfd, elf32_arm_plt_entry[0], ptr + 0);
+   bfd_put_32 (output_bfd, elf32_arm_plt_entry[1], ptr + 4);
+   bfd_put_32 (output_bfd, elf32_arm_plt_entry[2], ptr + 8);
+   bfd_put_32 (output_bfd, elf32_arm_plt_entry[3], ptr + 12);
+   bfd_put_32 (output_bfd, got_offset, ptr + 16);
+#else /* FIVE_WORD_PLT */
 	  /* Calculate the displacement between the PLT slot and the
 	     entry in the GOT.  The eight-byte offset accounts for the
 	     value produced by adding to pc in the first instruction
@@ -7604,6 +7636,7 @@ elf32_arm_populate_plt_entry (bfd *output_bfd, struct bfd_link_info *info,
 #ifdef FOUR_WORD_PLT
 	  bfd_put_32 (output_bfd, elf32_arm_plt_entry[3], ptr + 12);
 #endif
+#endif /* FIVE_WORD_PLT */
 	}
 
       /* Fill in the entry in the .rel(a).(i)plt section.  */
@@ -14163,7 +14196,9 @@ elf32_arm_finish_dynamic_sections (bfd * output_bfd, struct bfd_link_info * info
 	      put_arm_insn (htab, output_bfd, plt0_entry[3],
 			    splt->contents + 12);
 
-#ifdef FOUR_WORD_PLT
+#ifdef FIVE_WORD_PLT
+       /* TODO : see later what to do with first plt entry. This is need for lazy linking */
+#elif FOUR_WORD_PLT
 	      /* The displacement value goes in the otherwise-unused
 		 last word of the second entry.  */
 	      bfd_put_32 (output_bfd, got_displacement, splt->contents + 28);
@@ -14207,7 +14242,9 @@ elf32_arm_finish_dynamic_sections (bfd * output_bfd, struct bfd_link_info * info
 	  arm_put_trampoline (htab, output_bfd, 
 			      splt->contents + htab->tls_trampoline,
 			      tls_trampoline, 3);
-#ifdef FOUR_WORD_PLT
+#ifdef FIVE_WORD_PLT
+    /*TODO : What to do for tls support ? */
+#elif FOUR_WORD_PLT
 	  bfd_put_32 (output_bfd, 0x00000000,
 		      splt->contents + htab->tls_trampoline + 12);
 #endif 
@@ -14491,7 +14528,12 @@ elf32_arm_output_plt_map_1 (output_arch_syminfo *osi,
 	  if (!elf32_arm_output_map_sym (osi, ARM_MAP_THUMB, addr - 4))
 	    return FALSE;
 	}
-#ifdef FOUR_WORD_PLT
+#ifdef FIVE_WORD_PLT
+      if (!elf32_arm_output_map_sym (osi, ARM_MAP_ARM, addr))
+ return FALSE;
+      if (!elf32_arm_output_map_sym (osi, ARM_MAP_DATA, addr + 16))
+ return FALSE;
+#elif FOUR_WORD_PLT
       if (!elf32_arm_output_map_sym (osi, ARM_MAP_ARM, addr))
 	return FALSE;
       if (!elf32_arm_output_map_sym (osi, ARM_MAP_DATA, addr + 12))
@@ -14811,7 +14853,7 @@ elf32_arm_output_arch_local_syms (bfd *output_bfd,
 	{
 	  if (!elf32_arm_output_map_sym (&osi, ARM_MAP_ARM, 0))
 	    return FALSE;
-#ifndef FOUR_WORD_PLT
+#if !defined(FOUR_WORD_PLT) && !defined(FIVE_WORD_PLT)
 	  if (!elf32_arm_output_map_sym (&osi, ARM_MAP_DATA, 16))
 	    return FALSE;
 #endif
@@ -14856,7 +14898,9 @@ elf32_arm_output_arch_local_syms (bfd *output_bfd,
       /* Mapping symbols for the tls trampoline.  */
       if (!elf32_arm_output_map_sym (&osi, ARM_MAP_ARM, htab->tls_trampoline))
 	return FALSE;
-#ifdef FOUR_WORD_PLT
+#ifdef FIVE_WORD_PLT
+      /* Do we have something to do for fdpic */
+#elif FOUR_WORD_PLT
       if (!elf32_arm_output_map_sym (&osi, ARM_MAP_DATA,
 				     htab->tls_trampoline + 12))
 	return FALSE;
