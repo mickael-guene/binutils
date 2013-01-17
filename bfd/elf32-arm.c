@@ -2933,7 +2933,21 @@ struct elf32_arm_link_hash_table
 
   /* True if the target system uses FDPIC. */
   int fdpic_p;
+
+  /* fixup section. Use for fdpic. */
+  asection *srofixup;
 };
+
+/* Add an FDPIC read-only fixup.  */
+static void
+arm_elf_add_rofixup (bfd *output_bfd, asection *srofixup, bfd_vma offset)
+{
+  bfd_vma fixup_offset;
+
+  fixup_offset = srofixup->reloc_count++ * 4;
+  BFD_ASSERT (fixup_offset < srofixup->size);
+  bfd_put_32 (output_bfd, offset, srofixup->contents + fixup_offset);
+}
 
 /* Create an entry in an ARM ELF linker hash table.  */
 
@@ -3171,6 +3185,13 @@ create_got_section (bfd *dynobj, struct bfd_link_info *info)
     return TRUE;
 
   if (! _bfd_elf_create_got_section (dynobj, info))
+    return FALSE;
+
+  /* Also create .rofixup.  */
+  htab->srofixup = bfd_make_section_with_flags (dynobj, ".rofixup",
+            (SEC_ALLOC | SEC_LOAD | SEC_HAS_CONTENTS
+             | SEC_IN_MEMORY | SEC_LINKER_CREATED | SEC_READONLY));
+  if (htab->srofixup == NULL || ! bfd_set_section_alignment (dynobj, htab->srofixup, 2))
     return FALSE;
 
   return TRUE;
@@ -13489,6 +13510,10 @@ elf32_arm_size_dynamic_sections (bfd * output_bfd ATTRIBUTE_UNUSED,
   else
     htab->tls_ldm_got.offset = -1;
 
+  /* At the very end of the .rofixup section is a pointer to the GOT, reserved space for it. */
+  if (htab->fdpic_p && htab->srofixup != NULL)
+    htab->srofixup->size += 4;
+
   /* Allocate global sym .plt and .got entries, and space for global
      sym dynamic relocs.  */
   elf_link_hash_traverse (& htab->root, allocate_dynrelocs_for_symbol, info);
@@ -13579,7 +13604,8 @@ elf32_arm_size_dynamic_sections (bfd * output_bfd ATTRIBUTE_UNUSED,
 	       && s != htab->root.sgotplt
 	       && s != htab->root.iplt
 	       && s != htab->root.igotplt
-	       && s != htab->sdynbss)
+         && s != htab->sdynbss
+         && s != htab->srofixup)
 	{
 	  /* It's not one of our sections, so don't allocate space.  */
 	  continue;
@@ -14232,6 +14258,21 @@ elf32_arm_finish_dynamic_sections (bfd * output_bfd, struct bfd_link_info * info
 
       elf_section_data (sgot->output_section)->this_hdr.sh_entsize = 4;
     }
+
+  /* At the very end of the .rofixup section is a pointer to the GOT.  */
+  if (htab->fdpic_p && htab->srofixup != NULL)
+  {
+    struct elf_link_hash_entry *hgot = htab->root.hgot;
+
+    bfd_vma got_value = hgot->root.u.def.value
+                      + hgot->root.u.def.section->output_section->vma
+                      + hgot->root.u.def.section->output_offset;
+
+    arm_elf_add_rofixup(output_bfd, htab->srofixup, got_value);
+
+    /* Make sure we allocated and generated the same number of fixups.  */
+    BFD_ASSERT (htab->srofixup->reloc_count * 4 == htab->srofixup->size);
+  }
 
   return TRUE;
 }
