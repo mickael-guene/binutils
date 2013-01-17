@@ -2083,6 +2083,8 @@ typedef unsigned short int insn16;
    section.  */
 #define ELF_DYNAMIC_INTERPRETER     "/usr/lib/ld.so.1"
 
+#define DEFAULT_STACK_SIZE 0x20000
+
 static const unsigned long tls_trampoline [] =
   {
     0xe08e0000,		/* add r0, lr, r0 */
@@ -13716,6 +13718,76 @@ elf32_arm_always_size_sections (bfd *output_bfd,
           (*bed->elf_backend_hide_symbol) (info, tlsbase, TRUE);
 	}
     }
+
+  {
+    struct elf_link_hash_entry *h;
+
+    /* Force a PT_GNU_STACK segment to be created.  */
+    if (! elf_tdata (output_bfd)->stack_flags)
+      elf_tdata (output_bfd)->stack_flags = PF_R | PF_W | PF_X;
+    /* Define __stacksize if it's not defined yet.  */
+    h = elf_link_hash_lookup (elf_hash_table (info), "__stacksize", FALSE, FALSE, FALSE);
+    if (! h || h->root.type != bfd_link_hash_defined || h->type != STT_OBJECT || !h->def_regular)
+    {
+      struct bfd_link_hash_entry *bh = NULL;
+
+      if (!(_bfd_generic_link_add_one_symbol(info, output_bfd, "__stacksize",
+                                             BSF_GLOBAL, bfd_abs_section_ptr,
+                                             DEFAULT_STACK_SIZE, (const char *) NULL, FALSE,
+                                             get_elf_backend_data (output_bfd)->collect, &bh)))
+        return FALSE;
+
+      h = (struct elf_link_hash_entry *) bh;
+      h->def_regular = 1;
+      h->type = STT_OBJECT;
+    }
+  }
+
+  return TRUE;
+}
+
+static bfd_boolean
+elf32_armfdpic_modify_program_headers (bfd *output_bfd, struct bfd_link_info *info)
+{
+  struct elf_obj_tdata *tdata = elf_tdata (output_bfd);
+  struct elf_segment_map *m;
+  Elf_Internal_Phdr *p;
+
+  /* objcopy and strip preserve what's already there using
+     elf32_bfinfdpic_copy_private_bfd_data ().  */
+  if (! info)
+    return TRUE;
+
+  for (p = tdata->phdr, m = tdata->segment_map; m != NULL; m = m->next, p++)
+    if (m->p_type == PT_GNU_STACK)
+      break;
+
+  if (m)
+  {
+    struct elf_link_hash_entry *h;
+
+    /* Obtain the pointer to the __stacksize symbol.  */
+    h = elf_link_hash_lookup (elf_hash_table (info), "__stacksize",
+                              FALSE, FALSE, FALSE);
+    if (h)
+    {
+      while (h->root.type == bfd_link_hash_indirect
+             || h->root.type == bfd_link_hash_warning)
+        h = (struct elf_link_hash_entry *) h->root.u.i.link;
+
+      BFD_ASSERT (h->root.type == bfd_link_hash_defined);
+    }
+
+    /* Set the header p_memsz from the symbol value.  We
+    intentionally ignore the symbol section.  */
+    if (h && h->root.type == bfd_link_hash_defined)
+      p->p_memsz = h->root.u.def.value;
+    else
+      p->p_memsz = DEFAULT_STACK_SIZE;
+
+    p->p_align = 8;
+  }
+
   return TRUE;
 }
 
@@ -15424,6 +15496,8 @@ const struct elf_size_info elf32_arm_size_info =
 #define elf_backend_finish_dynamic_sections	elf32_arm_finish_dynamic_sections
 #define elf_backend_size_dynamic_sections	elf32_arm_size_dynamic_sections
 #define elf_backend_always_size_sections	elf32_arm_always_size_sections
+#undef elf_backend_modify_program_headers
+#define elf_backend_modify_program_headers elf32_armfdpic_modify_program_headers
 #define elf_backend_init_index_section		_bfd_elf_init_2_index_sections
 #define elf_backend_post_process_headers	elf32_arm_post_process_headers
 #define elf_backend_reloc_type_class		elf32_arm_reloc_type_class
