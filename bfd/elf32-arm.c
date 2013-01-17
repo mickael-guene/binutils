@@ -7411,7 +7411,7 @@ elf32_arm_allocate_plt_entry (struct bfd_link_info *info,
       splt = htab->root.splt;
       sgotplt = htab->root.sgotplt;
 
-      /* Allocate room for an R_JUMP_SLOT relocation in .rel.plt.  */
+      /* Allocate room for an R_JUMP_SLOT or R_ARM_FUNCDESC_VALUE (fdpic case) relocation in .rel.plt.  */
       elf32_arm_allocate_dynrelocs (info, htab->root.srelplt, 1);
 
       /* If this is the first .plt entry, make room for the special
@@ -7431,7 +7431,10 @@ elf32_arm_allocate_plt_entry (struct bfd_link_info *info,
       /* We also need to make an entry in the .got.plt section, which
 	 will be placed in the .got section by the linker script.  */
       arm_plt->got_offset = sgotplt->size - 8 * htab->num_tls_desc;
-      sgotplt->size += 4;
+      if (htab->fdpic_p)
+       sgotplt->size += 8; /* function descriptor take 64 bits into got */
+      else
+        sgotplt->size += 4;
     }
 }
 
@@ -7652,9 +7655,16 @@ elf32_arm_populate_plt_entry (bfd *output_bfd, struct bfd_link_info *info,
 	}
       else
 	{
-	  rel.r_info = ELF32_R_INFO (dynindx, R_ARM_JUMP_SLOT);
-	  initial_got_entry = (splt->output_section->vma
-			       + splt->output_offset);
+    /* For fdpic We will have to solve a R_ARM_FUNCDESC_VALUE use py plt
+       entry */
+    if (htab->fdpic_p) {
+      rel.r_info = ELF32_R_INFO (dynindx, R_ARM_FUNCDESC_VALUE);
+      initial_got_entry = 0;
+    } else {
+      rel.r_info = ELF32_R_INFO (dynindx, R_ARM_JUMP_SLOT);
+      initial_got_entry = (splt->output_section->vma
+                + splt->output_offset);
+      }
 	}
 
       /* Fill in the entry in the global offset table.  */
