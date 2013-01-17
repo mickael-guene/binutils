@@ -7562,7 +7562,11 @@ elf32_arm_populate_plt_entry (bfd *output_bfd, struct bfd_link_info *info,
 	 in all the symbols for which we are making plt entries.
 	 After the reserved .got.plt entries, all symbols appear in
 	 the same order as in .plt.  */
-      plt_index = (got_offset - got_header_size) / 4;
+      if (htab->fdpic_p)
+        /* function descriptor take 8 bytes */
+        plt_index = (got_offset - got_header_size) / 8;
+      else
+        plt_index = (got_offset - got_header_size) / 4;
 
       /* Calculate the address of the GOT entry.  */
       got_address = (sgot->output_section->vma
