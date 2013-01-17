@@ -16844,6 +16844,9 @@ static const struct asm_shift_name shift_names [] =
 #ifdef OBJ_ELF
 static struct reloc_entry reloc_names[] =
 {
+  { "gotfuncdesc", BFD_RELOC_ARM_GOTFUNCDESC },         { "GOTFUNCDESC", BFD_RELOC_ARM_GOTFUNCDESC },
+  { "gotofffuncdesc", BFD_RELOC_ARM_GOTOFFFUNCDESC },   { "GOTOFFFUNCDESC", BFD_RELOC_ARM_GOTOFFFUNCDESC },
+  { "funcdesc", BFD_RELOC_ARM_FUNCDESC },               { "FUNCDESC", BFD_RELOC_ARM_FUNCDESC },
   { "got",     BFD_RELOC_ARM_GOT32   },	 { "GOT",     BFD_RELOC_ARM_GOT32   },
   { "gotoff",  BFD_RELOC_ARM_GOTOFF  },	 { "GOTOFF",  BFD_RELOC_ARM_GOTOFF  },
   { "plt",     BFD_RELOC_ARM_PLT32   },	 { "PLT",     BFD_RELOC_ARM_PLT32   },
@@ -21213,6 +21216,12 @@ md_apply_fix (fixS *	fixP,
       if (fixP->fx_done || !seg->use_rela_p)
 	md_number_to_chars (buf, fixP->fx_offset, 4);
       break;
+    case BFD_RELOC_ARM_GOTFUNCDESC:
+    case BFD_RELOC_ARM_GOTOFFFUNCDESC:
+    case BFD_RELOC_ARM_FUNCDESC:
+      if (fixP->fx_done || !seg->use_rela_p)
+        md_number_to_chars (buf, 0, 4);
+      break;
 #endif
 
     case BFD_RELOC_RVA:
@@ -21839,6 +21848,9 @@ tc_gen_reloc (asection *section, fixS *fixp)
     case BFD_RELOC_ARM_LDC_SB_G1:
     case BFD_RELOC_ARM_LDC_SB_G2:
     case BFD_RELOC_ARM_V4BX:
+    case BFD_RELOC_ARM_GOTFUNCDESC:
+    case BFD_RELOC_ARM_GOTOFFFUNCDESC:
+    case BFD_RELOC_ARM_FUNCDESC:
       code = fixp->fx_r_type;
       break;
 
