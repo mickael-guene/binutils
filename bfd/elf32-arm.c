@@ -2928,6 +2928,9 @@ struct elf32_arm_link_hash_table
   unsigned int bfd_count;
   int top_index;
   asection **input_list;
+
+  /* True if the target system uses FDPIC. */
+  int fdpic_p;
 };
 
 /* Create an entry in an ARM ELF linker hash table.  */
@@ -3403,6 +3406,7 @@ elf32_arm_link_hash_table_create (bfd *abfd)
   ret->bfd_count = 0;
   ret->top_index = 0;
   ret->input_list = NULL;
+  ret->fdpic_p = 1;
 
   if (!bfd_hash_table_init (&ret->stub_hash_table, stub_hash_newfunc,
 			    sizeof (struct elf32_arm_stub_hash_entry)))
@@ -7954,7 +7958,13 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
      flag will not be set.  */
   if (bfd_get_start_address (output_bfd) != 0)
     elf_elfheader (output_bfd)->e_flags |= EF_ARM_HASENTRY;
+  {
+    struct elf32_arm_link_hash_table *htab;
 
+    htab = elf32_arm_hash_table (info);
+    if (htab->fdpic_p)
+      elf_elfheader (output_bfd)->e_flags |= EF_ARM_FDPIC;
+  }
   eh = (struct elf32_arm_link_hash_entry *) h;
   sgot = globals->root.sgot;
   local_got_offsets = elf_local_got_offsets (input_bfd);
@@ -11916,7 +11926,13 @@ elf32_arm_print_private_bfd_data (bfd *abfd, void * ptr)
   if (flags & EF_ARM_HASENTRY)
     fprintf (file, _(" [has entry point]"));
 
-  flags &= ~ (EF_ARM_RELEXEC | EF_ARM_HASENTRY);
+  if (flags & EF_ARM_PIC)
+    fprintf (file, _(" [position independent]"));
+
+    if (flags & EF_ARM_FDPIC)
+    fprintf (file, _(" [FDPIC abi supplement]"));
+
+  flags &= ~ (EF_ARM_RELEXEC | EF_ARM_HASENTRY | EF_ARM_PIC | EF_ARM_FDPIC);
 
   if (flags)
     fprintf (file, _("<Unrecognised flag bits set>"));

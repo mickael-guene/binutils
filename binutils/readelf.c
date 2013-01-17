@@ -2011,6 +2011,18 @@ decode_ARM_machine_flags (unsigned e_flags, char buf[])
       e_flags &= ~ EF_ARM_HASENTRY;
     }
 
+  if (e_flags & EF_ARM_PIC)
+    {
+      strcat (buf, ", position independent");
+      e_flags &= ~ EF_ARM_PIC;
+    }
+
+  if (e_flags & EF_ARM_FDPIC)
+    {
+      strcat (buf, ", FDPIC abi supplement");
+      e_flags &= ~ EF_ARM_FDPIC;
+    }
+
   /* Now handle EABI specific flags.  */
   switch (eabi)
     {
