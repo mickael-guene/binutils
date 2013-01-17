@@ -2693,6 +2693,13 @@ struct arm_local_iplt_info {
   struct elf_dyn_relocs *dyn_relocs;
 };
 
+/* structure to handle fdpic support for local functions */
+struct fdpic_local {
+  unsigned int funcdesc_cnt;
+  unsigned int gotofffuncdesc_cnt;
+  int funcdesc_offset;
+};
+
 struct elf_arm_obj_tdata
 {
   struct elf_obj_tdata root;
@@ -2711,6 +2718,9 @@ struct elf_arm_obj_tdata
 
   /* Zero to warn when linking objects with incompatible wchar_t sizes.  */
   int no_wchar_size_warning;
+
+  /* Maintains counters and funcdesc info */
+  struct fdpic_local *local_fdpic_cnts;
 };
 
 #define elf_arm_tdata(bfd) \
@@ -2725,6 +2735,9 @@ struct elf_arm_obj_tdata
 #define elf32_arm_local_iplt(bfd) \
   (elf_arm_tdata (bfd)->local_iplt)
 
+#define elf32_arm_local_fdpic_cnts(bfd) \
+  (elf_arm_tdata (bfd)->local_fdpic_cnts)
+
 #define is_arm_elf(bfd) \
   (bfd_get_flavour (bfd) == bfd_target_elf_flavour \
    && elf_tdata (bfd) != NULL \
@@ -2738,6 +2751,14 @@ elf32_arm_mkobject (bfd *abfd)
 }
 
 #define elf32_arm_hash_entry(ent) ((struct elf32_arm_link_hash_entry *)(ent))
+
+/* structure to handle fdpic support for extern functions */
+struct fdpic_global {
+  unsigned int gotofffuncdesc_cnt;
+  unsigned int gotfuncdesc_cnt;
+  unsigned int funcdesc_cnt;
+  int funcdesc_offset;
+};
 
 /* Arm ELF linker hash entry.  */
 struct elf32_arm_link_hash_entry
@@ -2771,9 +2792,12 @@ struct elf32_arm_link_hash_entry
        symbols with Arm stubs.  */
     struct elf_link_hash_entry *export_glue;
 
-   /* A pointer to the most recently used stub hash entry against this
+    /* A pointer to the most recently used stub hash entry against this
      symbol.  */
     struct elf32_arm_stub_hash_entry *stub_cache;
+
+    /* counter fdpic reloacation against this symbol. */
+    struct fdpic_global fdpic_cnts;
   };
 
 /* Traverse an arm ELF linker hash table.  */
@@ -3005,6 +3029,11 @@ elf32_arm_link_hash_newfunc (struct bfd_hash_entry * entry,
       ret->export_glue = NULL;
 
       ret->stub_cache = NULL;
+
+      ret->fdpic_cnts.gotofffuncdesc_cnt = 0;
+      ret->fdpic_cnts.gotfuncdesc_cnt = 0;
+      ret->fdpic_cnts.funcdesc_cnt = 0;
+      ret->fdpic_cnts.funcdesc_offset = -1;
     }
 
   return (struct bfd_hash_entry *) ret;
@@ -3026,10 +3055,14 @@ elf32_arm_allocate_local_sym_info (bfd *abfd)
       size = num_syms * (sizeof (bfd_signed_vma)
 			 + sizeof (struct arm_local_iplt_info *)
 			 + sizeof (bfd_vma)
-			 + sizeof (char));
+			 + sizeof (char)
+       + sizeof (struct fdpic_local));
       data = bfd_zalloc (abfd, size);
       if (data == NULL)
 	return FALSE;
+
+      elf32_arm_local_fdpic_cnts (abfd) = (struct fdpic_local *) data;
+      data += num_syms * sizeof (struct fdpic_local);
 
       elf_local_got_refcounts (abfd) = (bfd_signed_vma *) data;
       data += num_syms * sizeof (bfd_signed_vma);
