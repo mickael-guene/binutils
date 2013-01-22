@@ -3406,6 +3406,11 @@ elf32_arm_copy_indirect_symbol (struct bfd_link_info *info,
       edir->plt.noncall_refcount += eind->plt.noncall_refcount;
       eind->plt.noncall_refcount = 0;
 
+      /* Copy fdpic counters */
+      edir->fdpic_cnts.gotofffuncdesc_cnt += eind->fdpic_cnts.gotofffuncdesc_cnt;
+      edir->fdpic_cnts.gotfuncdesc_cnt += eind->fdpic_cnts.gotfuncdesc_cnt;
+      edir->fdpic_cnts.funcdesc_cnt += eind->fdpic_cnts.funcdesc_cnt;
+
       /* We should only allocate a function to .iplt once the final
 	 symbol information is known.  */
       BFD_ASSERT (!eind->is_iplt);
