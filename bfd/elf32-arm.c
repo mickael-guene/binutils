@@ -14521,6 +14521,7 @@ elf32_arm_finish_dynamic_sections (bfd * output_bfd, struct bfd_link_info * info
 
 #ifdef FIVE_WORD_PLT
        /* TODO : see later what to do with first plt entry. This is need for lazy linking */
+         (void)got_displacement;
 #elif FOUR_WORD_PLT
 	      /* The displacement value goes in the otherwise-unused
 		 last word of the second entry.  */
@@ -14852,6 +14853,7 @@ elf32_arm_output_plt_map_1 (output_arch_syminfo *osi,
 	    return FALSE;
 	}
 #ifdef FIVE_WORD_PLT
+        (void)plt_header_size;
       if (!elf32_arm_output_map_sym (osi, ARM_MAP_ARM, addr))
  return FALSE;
       if (!elf32_arm_output_map_sym (osi, ARM_MAP_DATA, addr + 16))
