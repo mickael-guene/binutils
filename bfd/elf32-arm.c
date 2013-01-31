@@ -3493,7 +3493,7 @@ elf32_arm_link_hash_table_create (bfd *abfd)
   ret->bfd_count = 0;
   ret->top_index = 0;
   ret->input_list = NULL;
-  ret->fdpic_p = 1;
+  ret->fdpic_p = 0;
 
   if (!bfd_hash_table_init (&ret->stub_hash_table, stub_hash_newfunc,
 			    sizeof (struct elf32_arm_stub_hash_entry)))
@@ -15944,6 +15944,43 @@ const struct elf_size_info elf32_arm_size_info =
 #define elf_backend_obj_attrs_section_type	SHT_ARM_ATTRIBUTES
 #define elf_backend_obj_attrs_order	elf32_arm_obj_attrs_order
 #define elf_backend_obj_attrs_handle_unknown elf32_arm_obj_attrs_handle_unknown
+
+#include "elf32-target.h"
+
+/* Fdpic Targets. */
+
+#undef  TARGET_LITTLE_SYM
+#define TARGET_LITTLE_SYM               bfd_elf32_littlearm_fdpic_vec
+#undef  TARGET_LITTLE_NAME
+#define TARGET_LITTLE_NAME              "elf32-littlearm-fdpic"
+#undef  TARGET_BIG_SYM
+#define TARGET_BIG_SYM                  bfd_elf32_bigarm_fdpic_vec
+#undef  TARGET_BIG_NAME
+#define TARGET_BIG_NAME                 "elf32-bigarm-fdpic"
+
+/* Like elf32_arm_link_hash_table_create -- but overrides
+   appropriately for fdpic.  */
+
+static struct bfd_link_hash_table *
+elf32_arm_fdpic_link_hash_table_create (bfd *abfd)
+{
+  struct bfd_link_hash_table *ret;
+
+  ret = elf32_arm_link_hash_table_create (abfd);
+  if (ret)
+    {
+      struct elf32_arm_link_hash_table *htab = (struct elf32_arm_link_hash_table *) ret;
+
+      htab->fdpic_p = 1;
+    }
+  return ret;
+}
+
+#undef  elf32_bed
+#define elf32_bed elf32_arm_fdpic_bed
+
+#undef  bfd_elf32_bfd_link_hash_table_create
+#define bfd_elf32_bfd_link_hash_table_create  elf32_arm_fdpic_link_hash_table_create
 
 #include "elf32-target.h"
 
