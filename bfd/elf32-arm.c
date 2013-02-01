@@ -14068,6 +14068,9 @@ elf32_arm_always_size_sections (bfd *output_bfd,
 	                        struct bfd_link_info *info)
 {
   asection *tls_sec;
+  struct elf32_arm_link_hash_table *htab;
+
+  htab = elf32_arm_hash_table (info);
 
   if (info->relocatable)
     return TRUE;
@@ -14101,6 +14104,7 @@ elf32_arm_always_size_sections (bfd *output_bfd,
 	}
     }
 
+  if (htab->fdpic_p)
   {
     struct elf_link_hash_entry *h;
 
@@ -15906,8 +15910,6 @@ const struct elf_size_info elf32_arm_size_info =
 #define elf_backend_finish_dynamic_sections	elf32_arm_finish_dynamic_sections
 #define elf_backend_size_dynamic_sections	elf32_arm_size_dynamic_sections
 #define elf_backend_always_size_sections	elf32_arm_always_size_sections
-#undef elf_backend_modify_program_headers
-#define elf_backend_modify_program_headers elf32_armfdpic_modify_program_headers
 #define elf_backend_init_index_section		_bfd_elf_init_2_index_sections
 #define elf_backend_post_process_headers	elf32_arm_post_process_headers
 #define elf_backend_reloc_type_class		elf32_arm_reloc_type_class
@@ -15982,7 +15984,12 @@ elf32_arm_fdpic_link_hash_table_create (bfd *abfd)
 #undef  bfd_elf32_bfd_link_hash_table_create
 #define bfd_elf32_bfd_link_hash_table_create  elf32_arm_fdpic_link_hash_table_create
 
+#undef elf_backend_modify_program_headers
+#define elf_backend_modify_program_headers elf32_armfdpic_modify_program_headers
+
 #include "elf32-target.h"
+
+#undef elf_backend_modify_program_headers
 
 /* VxWorks Targets.  */
 
