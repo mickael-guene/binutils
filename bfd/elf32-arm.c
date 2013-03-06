@@ -10201,7 +10201,7 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
           Elf_Internal_Rela outrel;
           int dynindx = 0;
           int offset = local_fdpic_cnts[r_symndx].funcdesc_offset & ~1;
-          bfd_vma addr = value;
+          bfd_vma addr = dynreloc_value;
 
           if (local_fdpic_cnts == NULL)
             abort();
@@ -10221,7 +10221,7 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
           Elf_Internal_Rela outrel;
           int dynindx = 0;
           int offset = eh->fdpic_cnts.funcdesc_offset & ~1;
-          bfd_vma addr = value;
+          bfd_vma addr = dynreloc_value;
 
           if (h->dynindx != -1)
             abort(); /* this case can't occur since funcdesc is allocated by dl and so we can't solve reloc */
@@ -10252,7 +10252,7 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
           if(h->dynindx == -1) {
             int dynindx = 0;
             int offset = eh->fdpic_cnts.funcdesc_offset & ~1;
-            bfd_vma addr = value;
+            bfd_vma addr = dynreloc_value;
 
             /* emit R_ARM_FUNCDESC_VALUE on funcdesc if not yet done */
             if ((eh->fdpic_cnts.funcdesc_offset & 1) == 0) {
@@ -10293,7 +10293,7 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
           Elf_Internal_Rela outrel;
           int dynindx = 0;
           int offset = local_fdpic_cnts[r_symndx].funcdesc_offset & ~1;
-          bfd_vma addr = value;
+          bfd_vma addr = dynreloc_value;
 
           /* replace static FUNCDESC reloc by a R_ARM_RELATIVE dynamic reloc */
           outrel.r_info = ELF32_R_INFO (0, R_ARM_RELATIVE);
@@ -10315,7 +10315,7 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
           if (h->dynindx == -1) {
             int dynindx = 0;
             int offset = eh->fdpic_cnts.funcdesc_offset & ~1;
-            bfd_vma addr = value;
+            bfd_vma addr = dynreloc_value;
             Elf_Internal_Rela outrel;
 
             /* replace static FUNCDESC reloc by a R_ARM_RELATIVE dynamic reloc */
