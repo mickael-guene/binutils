@@ -7453,8 +7453,15 @@ elf32_arm_allocate_plt_entry (struct bfd_link_info *info,
       splt = htab->root.splt;
       sgotplt = htab->root.sgotplt;
 
-      /* Allocate room for an R_JUMP_SLOT or R_ARM_FUNCDESC_VALUE (fdpic case) relocation in .rel.plt.  */
+    if (htab->fdpic_p) {
+      /* Allocate room for R_ARM_FUNCDESC_VALUE */
+      /* for lazy binding relocation will be put into .rel.plt else in .rel.got */
+      /* today we don't support lazy so put it in .rel.got */
+      elf32_arm_allocate_dynrelocs (info, htab->root.srelgot, 1);
+    } else {
+      /* Allocate room for an R_JUMP_SLOT relocation in .rel.plt.  */
       elf32_arm_allocate_dynrelocs (info, htab->root.srelplt, 1);
+    }
 
       /* If this is the first .plt entry, make room for the special
 	 first entry.  */
@@ -7718,8 +7725,14 @@ elf32_arm_populate_plt_entry (bfd *output_bfd, struct bfd_link_info *info,
 		  sgot->contents + got_offset);
     }
 
-  loc = srel->contents + plt_index * RELOC_SIZE (htab);
-  SWAP_RELOC_OUT (htab) (output_bfd, &rel, loc);
+  if (htab->fdpic_p) {
+    /* for fdpic we put plt reloc into .rel.got when not lazy else we put them in .rel.plt */
+    /* today we don't support lazy so put it in .rel.got */
+    elf32_arm_add_dynreloc(output_bfd, info, htab->root.srelgot, &rel);
+  } else {
+    loc = srel->contents + plt_index * RELOC_SIZE (htab);
+    SWAP_RELOC_OUT (htab) (output_bfd, &rel, loc);
+  }
 }
 
 /* Some relocations map to different relocations depending on the
@@ -13762,8 +13775,7 @@ elf32_arm_size_dynamic_sections (bfd * output_bfd ATTRIBUTE_UNUSED,
         /* will add an R_ARM_FUNCDESC_VALUE relocation */
         elf32_arm_allocate_dynrelocs (info, srel, 1);
       }
-      /* TODO : not sure R_ARM_FUNCDESC reloc in .rel.got are the good place for these relocs
-         should be place in rel section corresponding to where relocation occur */
+      /* will add an R_ARM_FUNCDESC relocation */
       elf32_arm_allocate_dynrelocs (info, srel, local_fdpic_cnts->funcdesc_cnt);
     }
 
