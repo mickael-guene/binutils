@@ -2108,7 +2108,7 @@ static const unsigned long dl_tlsdesc_lazy_trampoline [] =
 #define FIVE_WORD_PLT
 #ifdef FIVE_WORD_PLT
 
-/* do we need a plt0 entry ? */
+/* do we need a plt0 entry ? Seems that not unless we want to save one word per entry in lazy*/
 static const bfd_vma elf32_arm_plt0_entry [] =
   {
     0xe52de004,    /* str   lr, [sp, #-4]! */
@@ -2117,13 +2117,19 @@ static const bfd_vma elf32_arm_plt0_entry [] =
     0xe5bef008,    /* ldr   pc, [lr, #8]!  */
   };
 
+/* last 5 words contain plt lazy fragment code and data */
 static const bfd_vma elf32_arm_plt_entry [] =
   {
     0xe59fc008,    /* ldr     r12, .L1 */
     0xe08cc009,    /* add     r12, r12, r9 */
     0xe59c9004,    /* ldr     r9, [r12, #4] */
     0xe59cf000,    /* ldr     pc, [r12] */
-    0x00000000,    /* L1.     .word   foo@GOTOFFFUNCDESC */
+    0x00000000,    /* L1.     .word   foo(GOTOFFFUNCDESC) */
+    0x00000000,    /* L1.     .word   funcdesc_value_reloc_offset(foo) */
+    0xe51fc00c,    /* ldr     r12, [pc, #-12] */
+    0xe92d1000,    /* push    {r12} */
+    0xe599c004,    /* ldr     r12, [r9, #4] */
+    0xe599f000,    /* ldr     pc, [r9] */
   };
 
 #elif FOUR_WORD_PLT
@@ -3344,6 +3350,13 @@ elf32_arm_create_dynamic_sections (bfd *dynobj, struct bfd_link_info *info)
 	}
     }
 
+  if (htab->fdpic_p) {
+    if (info->flags & DF_BIND_NOW)
+      htab->plt_entry_size = 4 * (ARRAY_SIZE(elf32_arm_plt_entry) - 5);
+    else
+      htab->plt_entry_size = 4 * ARRAY_SIZE(elf32_arm_plt_entry);
+  }
+
   if (!htab->root.splt
       || !htab->root.srelplt
       || !htab->sdynbss
@@ -3468,8 +3481,9 @@ elf32_arm_link_hash_table_create (bfd *abfd)
   ret->target1_is_rel = 0;
   ret->target2_reloc = R_ARM_NONE;
 #ifdef FIVE_WORD_PLT
-  ret->plt_header_size = 16;
-  ret->plt_entry_size = 20;
+  ret->plt_header_size = 4 * ARRAY_SIZE(elf32_arm_plt0_entry);
+  /* will be fix later on */
+  ret->plt_entry_size = 4 * ARRAY_SIZE(elf32_arm_plt_entry);
 #elif FOUR_WORD_PLT
   ret->plt_header_size = 16;
   ret->plt_entry_size = 16;
@@ -7457,7 +7471,10 @@ elf32_arm_allocate_plt_entry (struct bfd_link_info *info,
       /* Allocate room for R_ARM_FUNCDESC_VALUE */
       /* for lazy binding relocation will be put into .rel.plt else in .rel.got */
       /* today we don't support lazy so put it in .rel.got */
-      elf32_arm_allocate_dynrelocs (info, htab->root.srelgot, 1);
+      if (info->flags & DF_BIND_NOW)
+        elf32_arm_allocate_dynrelocs (info, htab->root.srelgot, 1);
+      else
+        elf32_arm_allocate_dynrelocs (info, htab->root.srelplt, 1);
     } else {
       /* Allocate room for an R_JUMP_SLOT relocation in .rel.plt.  */
       elf32_arm_allocate_dynrelocs (info, htab->root.srelplt, 1);
@@ -7654,12 +7671,19 @@ elf32_arm_populate_plt_entry (bfd *output_bfd, struct bfd_link_info *info,
       else
 	{
 #ifdef FIVE_WORD_PLT
-   (void) got_displacement;
-   bfd_put_32 (output_bfd, elf32_arm_plt_entry[0], ptr + 0);
-   bfd_put_32 (output_bfd, elf32_arm_plt_entry[1], ptr + 4);
-   bfd_put_32 (output_bfd, elf32_arm_plt_entry[2], ptr + 8);
-   bfd_put_32 (output_bfd, elf32_arm_plt_entry[3], ptr + 12);
-   bfd_put_32 (output_bfd, got_offset, ptr + 16);
+    (void) got_displacement;
+    bfd_put_32 (output_bfd, elf32_arm_plt_entry[0], ptr + 0);
+    bfd_put_32 (output_bfd, elf32_arm_plt_entry[1], ptr + 4);
+    bfd_put_32 (output_bfd, elf32_arm_plt_entry[2], ptr + 8);
+    bfd_put_32 (output_bfd, elf32_arm_plt_entry[3], ptr + 12);
+    bfd_put_32 (output_bfd, got_offset, ptr + 16);
+    if (!(info->flags & DF_BIND_NOW)) {
+      bfd_put_32 (output_bfd, htab->root.srelplt->reloc_count * RELOC_SIZE (htab), ptr + 20); //funcdesc_value_reloc_offset
+      bfd_put_32 (output_bfd, elf32_arm_plt_entry[6], ptr + 24);
+      bfd_put_32 (output_bfd, elf32_arm_plt_entry[7], ptr + 28);
+      bfd_put_32 (output_bfd, elf32_arm_plt_entry[8], ptr + 32);
+      bfd_put_32 (output_bfd, elf32_arm_plt_entry[9], ptr + 36);
+    }
 #else /* FIVE_WORD_PLT */
 	  /* Calculate the displacement between the PLT slot and the
 	     entry in the GOT.  The eight-byte offset accounts for the
@@ -7721,14 +7745,22 @@ elf32_arm_populate_plt_entry (bfd *output_bfd, struct bfd_link_info *info,
 	}
 
       /* Fill in the entry in the global offset table.  */
-      bfd_put_32 (output_bfd, initial_got_entry,
-		  sgot->contents + got_offset);
+      bfd_put_32(output_bfd, initial_got_entry, sgot->contents + got_offset);
+
+      if (htab->fdpic_p && !(info->flags & DF_BIND_NOW)) {
+        /* setup initial funcdesc value */
+        bfd_put_32(output_bfd, plt_address + 0x18, sgot->contents + got_offset);
+        bfd_put_32(output_bfd, -1 /*TODO*/, sgot->contents + got_offset + 4);
+      }
     }
 
   if (htab->fdpic_p) {
     /* for fdpic we put plt reloc into .rel.got when not lazy else we put them in .rel.plt */
     /* today we don't support lazy so put it in .rel.got */
-    elf32_arm_add_dynreloc(output_bfd, info, htab->root.srelgot, &rel);
+    if (info->flags & DF_BIND_NOW)
+      elf32_arm_add_dynreloc(output_bfd, info, htab->root.srelgot, &rel);
+    else
+      elf32_arm_add_dynreloc(output_bfd, info, htab->root.srelplt, &rel);
   } else {
     loc = srel->contents + plt_index * RELOC_SIZE (htab);
     SWAP_RELOC_OUT (htab) (output_bfd, &rel, loc);
@@ -14889,9 +14921,12 @@ elf32_arm_output_plt_map_1 (output_arch_syminfo *osi,
 #ifdef FIVE_WORD_PLT
         (void)plt_header_size;
       if (!elf32_arm_output_map_sym (osi, ARM_MAP_ARM, addr))
- return FALSE;
+        return FALSE;
       if (!elf32_arm_output_map_sym (osi, ARM_MAP_DATA, addr + 16))
- return FALSE;
+        return FALSE;
+      if (htab->plt_entry_size == 4 * ARRAY_SIZE(elf32_arm_plt_entry))
+        if (!elf32_arm_output_map_sym (osi, ARM_MAP_ARM, addr + 24))
+          return FALSE;
 #elif FOUR_WORD_PLT
       if (!elf32_arm_output_map_sym (osi, ARM_MAP_ARM, addr))
 	return FALSE;
