@@ -14859,6 +14859,18 @@ elf32_arm_finish_dynamic_sections (bfd * output_bfd, struct bfd_link_info * info
   {
     struct elf_link_hash_entry *hgot = htab->root.hgot;
 
+    /* TODO : remove this hack when elf32_arm_gc_sweep_hook() fdpic support is done */
+    {
+        /* be sure we don't overflow */
+        if ((htab->srofixup->reloc_count + 1) * 4 > htab->srofixup->size)
+            abort();
+        /* fill rofixup allocated but remove in elf32_arm_gc_sweep_hook() */
+        while ((htab->srofixup->reloc_count + 1) * 4 < htab->srofixup->size) {
+            fprintf(stderr, "Warning padding rofixup section\n");
+            arm_elf_add_rofixup(output_bfd, htab->srofixup, -1);
+        }
+    }
+
     bfd_vma got_value = hgot->root.u.def.value
                       + hgot->root.u.def.section->output_section->vma
                       + hgot->root.u.def.section->output_offset;
