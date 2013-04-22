@@ -7674,6 +7674,12 @@ elf32_arm_populate_plt_entry (bfd *output_bfd, struct bfd_link_info *info,
       else
 	{
 #ifdef FIVE_WORD_PLT
+    if (elf32_arm_plt_needs_thumb_stub_p (info, arm_plt))
+    {
+      put_thumb_insn (htab, output_bfd, elf32_arm_plt_thumb_stub[0], ptr - 4);
+      put_thumb_insn (htab, output_bfd, elf32_arm_plt_thumb_stub[1], ptr - 2);
+    }
+
     (void) got_displacement;
     bfd_put_32 (output_bfd, elf32_arm_plt_entry[0], ptr + 0);
     bfd_put_32 (output_bfd, elf32_arm_plt_entry[1], ptr + 4);
