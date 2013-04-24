@@ -2990,6 +2990,47 @@ arm_elf_add_rofixup (bfd *output_bfd, asection *srofixup, bfd_vma offset)
   bfd_put_32 (output_bfd, offset, srofixup->contents + fixup_offset);
 }
 
+static void elf32_arm_add_dynreloc (bfd *output_bfd, struct bfd_link_info *info, asection *sreloc, Elf_Internal_Rela *rel);
+static void
+arm_elf_fill_funcdesc(bfd *output_bfd,
+               struct bfd_link_info *info,
+               int *funcdesc_offset,
+               int dynindx,
+               int offset,
+               bfd_vma addr,
+               bfd_vma dynreloc_value,
+               bfd_vma seg)
+{
+  if ((*funcdesc_offset & 1) == 0) {
+    struct elf32_arm_link_hash_table *globals = elf32_arm_hash_table (info);
+    asection *sgot = globals->root.sgot;
+
+    if (info->shared) {
+      asection *srelgot = globals->root.srelgot;
+      Elf_Internal_Rela outrel;
+
+      outrel.r_info = ELF32_R_INFO (dynindx, R_ARM_FUNCDESC_VALUE);
+      outrel.r_offset = sgot->output_section->vma + sgot->output_offset + offset;
+      outrel.r_addend = 0;
+
+      elf32_arm_add_dynreloc (output_bfd, info, srelgot, &outrel);
+            bfd_put_32 (output_bfd, addr, sgot->contents + offset);
+            bfd_put_32 (output_bfd, seg, sgot->contents + offset + 4);
+    } else {
+            struct elf_link_hash_entry *hgot = globals->root.hgot;
+            bfd_vma got_value = hgot->root.u.def.value
+                                + hgot->root.u.def.section->output_section->vma
+                                + hgot->root.u.def.section->output_offset;
+
+            arm_elf_add_rofixup(output_bfd, globals->srofixup, sgot->output_section->vma + sgot->output_offset + offset);
+            arm_elf_add_rofixup(output_bfd, globals->srofixup, sgot->output_section->vma + sgot->output_offset + offset + 4);
+            bfd_put_32 (output_bfd, dynreloc_value, sgot->contents + offset);
+            bfd_put_32 (output_bfd, got_value, sgot->contents + offset + 4);
+    }
+    *funcdesc_offset |= 1;
+  }
+}
+
 /* Create an entry in an ARM ELF linker hash table.  */
 
 static struct bfd_hash_entry *
@@ -10250,7 +10291,6 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
       {
         if (h == NULL) {
           struct fdpic_local *local_fdpic_cnts = elf32_arm_local_fdpic_cnts(input_bfd);
-          Elf_Internal_Rela outrel;
           int dynindx = elf_section_data (sym_sec->output_section)->dynindx;
           int offset = local_fdpic_cnts[r_symndx].funcdesc_offset & ~1;
           bfd_vma addr = dynreloc_value - sym_sec->output_section->vma;
@@ -10263,30 +10303,9 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
           /* solve relocation */
           bfd_put_32(output_bfd, (offset + sgot->output_offset), contents + rel->r_offset);
           /* emit R_ARM_FUNCDESC_VALUE or two fixup on funcdesc if not yet done */
-          if ((local_fdpic_cnts[r_symndx].funcdesc_offset & 1) == 0) {
-            if (info->shared) {
-                outrel.r_info = ELF32_R_INFO (dynindx, R_ARM_FUNCDESC_VALUE);
-                outrel.r_offset = sgot->output_section->vma + sgot->output_offset + offset;
-                outrel.r_addend = 0;
-                elf32_arm_add_dynreloc (output_bfd, info, srelgot, &outrel);
-                bfd_put_32 (output_bfd, addr, sgot->contents + offset);
-                bfd_put_32 (output_bfd, seg, sgot->contents + offset + 4);
-            } else {
-                struct elf32_arm_link_hash_table *htab = elf32_arm_hash_table (info);
-                struct elf_link_hash_entry *hgot = htab->root.hgot;
-                bfd_vma got_value = hgot->root.u.def.value
-                                    + hgot->root.u.def.section->output_section->vma
-                                    + hgot->root.u.def.section->output_offset;
-
-                arm_elf_add_rofixup(output_bfd, htab->srofixup, sgot->output_section->vma + sgot->output_offset + offset);
-                arm_elf_add_rofixup(output_bfd, htab->srofixup, sgot->output_section->vma + sgot->output_offset + offset + 4);
-                bfd_put_32 (output_bfd, dynreloc_value, sgot->contents + offset);
-                bfd_put_32 (output_bfd, got_value, sgot->contents + offset + 4);
-            }
-            local_fdpic_cnts[r_symndx].funcdesc_offset |= 1;
-          }
+          arm_elf_fill_funcdesc(output_bfd, info, &local_fdpic_cnts[r_symndx].funcdesc_offset,
+                                dynindx, offset, addr, dynreloc_value, seg);
         } else {
-          Elf_Internal_Rela outrel;
           int dynindx;
           int offset = eh->fdpic_cnts.funcdesc_offset & ~1;
           bfd_vma addr;
@@ -10307,28 +10326,8 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
           /* solve relocation */
           bfd_put_32(output_bfd, (offset + sgot->output_offset), contents + rel->r_offset);
           /* emit R_ARM_FUNCDESC_VALUE on funcdesc if not yet done */
-          if ((eh->fdpic_cnts.funcdesc_offset & 1) == 0) {
-            if (info->shared) {
-                outrel.r_info = ELF32_R_INFO (dynindx, R_ARM_FUNCDESC_VALUE);
-                outrel.r_offset = sgot->output_section->vma + sgot->output_offset + offset;
-                outrel.r_addend = 0;
-                elf32_arm_add_dynreloc (output_bfd, info, srelgot, &outrel);
-                bfd_put_32 (output_bfd, addr, sgot->contents + offset);
-                bfd_put_32 (output_bfd, seg, sgot->contents + offset + 4);
-            } else {
-                struct elf32_arm_link_hash_table *htab = elf32_arm_hash_table (info);
-                struct elf_link_hash_entry *hgot = htab->root.hgot;
-                bfd_vma got_value = hgot->root.u.def.value
-                                    + hgot->root.u.def.section->output_section->vma
-                                    + hgot->root.u.def.section->output_offset;
-
-                arm_elf_add_rofixup(output_bfd, htab->srofixup, sgot->output_section->vma + sgot->output_offset + offset);
-                arm_elf_add_rofixup(output_bfd, htab->srofixup, sgot->output_section->vma + sgot->output_offset + offset + 4);
-                bfd_put_32 (output_bfd, dynreloc_value, sgot->contents + offset);
-                bfd_put_32 (output_bfd, got_value, sgot->contents + offset + 4);
-            }
-            eh->fdpic_cnts.funcdesc_offset |= 1;
-          }
+          arm_elf_fill_funcdesc(output_bfd, info, &eh->fdpic_cnts.funcdesc_offset,
+                                dynindx, offset, addr, dynreloc_value, seg);
         }
       }
       *unresolved_reloc_p = FALSE;
@@ -10358,28 +10357,8 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
             if (info->shared && dynindx == 0)
               abort();
             /* emit R_ARM_FUNCDESC_VALUE on funcdesc if not yet done */
-            if ((eh->fdpic_cnts.funcdesc_offset & 1) == 0) {
-                if (info->shared) {
-                    outrel.r_info = ELF32_R_INFO (dynindx, R_ARM_FUNCDESC_VALUE);
-                    outrel.r_offset = sgot->output_section->vma + sgot->output_offset + offset;
-                    outrel.r_addend = 0;
-                    elf32_arm_add_dynreloc (output_bfd, info, srelgot, &outrel);
-                    bfd_put_32 (output_bfd, addr, sgot->contents + offset);
-                    bfd_put_32 (output_bfd, seg, sgot->contents + offset + 4);
-                } else {
-                    struct elf32_arm_link_hash_table *htab = elf32_arm_hash_table (info);
-                    struct elf_link_hash_entry *hgot = htab->root.hgot;
-                    bfd_vma got_value = hgot->root.u.def.value
-                                        + hgot->root.u.def.section->output_section->vma
-                                        + hgot->root.u.def.section->output_offset;
-
-                    arm_elf_add_rofixup(output_bfd, htab->srofixup, sgot->output_section->vma + sgot->output_offset + offset);
-                    arm_elf_add_rofixup(output_bfd, htab->srofixup, sgot->output_section->vma + sgot->output_offset + offset + 4);
-                    bfd_put_32 (output_bfd, dynreloc_value, sgot->contents + offset);
-                    bfd_put_32 (output_bfd, got_value, sgot->contents + offset + 4);
-                }
-              eh->fdpic_cnts.funcdesc_offset |= 1;
-            }
+            arm_elf_fill_funcdesc(output_bfd, info, &eh->fdpic_cnts.funcdesc_offset,
+                                dynindx, offset, addr, dynreloc_value, seg);
           }
           /* add a dynamic relocation on got entry if not already done */
           if ((eh->fdpic_cnts.gotfuncdesc_offset & 1) == 0) {
@@ -10432,30 +10411,9 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
           else
             arm_elf_add_rofixup(output_bfd, globals->srofixup, outrel.r_offset);
           bfd_put_32 (input_bfd, sgot->output_section->vma + sgot->output_offset + offset, hit_data);
-          if ((local_fdpic_cnts[r_symndx].funcdesc_offset & 1) == 0) {
-            /* add relocation on function descriptor */
-            if (info->shared) {
-                outrel.r_info = ELF32_R_INFO (dynindx, R_ARM_FUNCDESC_VALUE);
-                outrel.r_offset = sgot->output_section->vma + sgot->output_offset + offset;
-                outrel.r_addend = 0;
-
-                elf32_arm_add_dynreloc (output_bfd, info, srelgot, &outrel);
-                bfd_put_32 (output_bfd, addr, sgot->contents + offset);
-                bfd_put_32 (output_bfd, seg, sgot->contents + offset + 4);
-            } else {
-                struct elf32_arm_link_hash_table *htab = elf32_arm_hash_table (info);
-                struct elf_link_hash_entry *hgot = htab->root.hgot;
-                bfd_vma got_value = hgot->root.u.def.value
-                                    + hgot->root.u.def.section->output_section->vma
-                                    + hgot->root.u.def.section->output_offset;
-
-                arm_elf_add_rofixup(output_bfd, htab->srofixup, sgot->output_section->vma + sgot->output_offset + offset);
-                arm_elf_add_rofixup(output_bfd, htab->srofixup, sgot->output_section->vma + sgot->output_offset + offset + 4);
-                bfd_put_32 (output_bfd, dynreloc_value, sgot->contents + offset);
-                bfd_put_32 (output_bfd, got_value, sgot->contents + offset + 4);
-            }
-            local_fdpic_cnts[r_symndx].funcdesc_offset |= 1;
-          }
+          /* emit R_ARM_FUNCDESC_VALUE on funcdesc if not yet done */
+          arm_elf_fill_funcdesc(output_bfd, info, &local_fdpic_cnts[r_symndx].funcdesc_offset,
+                              dynindx, offset, addr, dynreloc_value, seg);
         } else {
           if (h->dynindx == -1) {
             int dynindx;
@@ -10483,30 +10441,10 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
             else
                 arm_elf_add_rofixup(output_bfd, globals->srofixup, outrel.r_offset);
             bfd_put_32 (input_bfd, sgot->output_section->vma + sgot->output_offset + offset, hit_data);
+            /* emit R_ARM_FUNCDESC_VALUE on funcdesc if not yet done */
+            arm_elf_fill_funcdesc(output_bfd, info, &eh->fdpic_cnts.funcdesc_offset,
+                                  dynindx, offset, addr, dynreloc_value, seg);
             /* add a dynamic relocation if not already done */
-            if ((eh->fdpic_cnts.funcdesc_offset & 1) == 0) {
-                if (info->shared) {
-                    outrel.r_info = ELF32_R_INFO (dynindx, R_ARM_FUNCDESC_VALUE);
-                    outrel.r_offset = sgot->output_section->vma + sgot->output_offset + offset;
-                    outrel.r_addend = 0;
-
-                    elf32_arm_add_dynreloc (output_bfd, info, srelgot, &outrel);
-                    bfd_put_32 (output_bfd, addr, sgot->contents + offset);
-                    bfd_put_32 (output_bfd, seg, sgot->contents + offset + 4);
-                } else {
-                    struct elf32_arm_link_hash_table *htab = elf32_arm_hash_table (info);
-                    struct elf_link_hash_entry *hgot = htab->root.hgot;
-                    bfd_vma got_value = hgot->root.u.def.value
-                                        + hgot->root.u.def.section->output_section->vma
-                                        + hgot->root.u.def.section->output_offset;
-
-                    arm_elf_add_rofixup(output_bfd, htab->srofixup, sgot->output_section->vma + sgot->output_offset + offset);
-                    arm_elf_add_rofixup(output_bfd, htab->srofixup, sgot->output_section->vma + sgot->output_offset + offset + 4);
-                    bfd_put_32 (output_bfd, dynreloc_value, sgot->contents + offset);
-                    bfd_put_32 (output_bfd, got_value, sgot->contents + offset + 4);
-                }
-              eh->fdpic_cnts.funcdesc_offset |= 1;
-            }
           } else {
             Elf_Internal_Rela outrel;
 
