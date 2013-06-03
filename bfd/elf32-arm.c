@@ -11325,6 +11325,34 @@ elf32_arm_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
   /* Copy object attributes.  */
   _bfd_elf_copy_obj_attributes (ibfd, obfd);
 
+  /* Correctly propagate stack segment for fdpic target */
+  if (in_flags & EF_ARM_FDPIC) {
+    unsigned i;
+
+	if (! elf_tdata (ibfd) || ! elf_tdata (ibfd)->phdr
+        || ! elf_tdata (obfd) || ! elf_tdata (obfd)->phdr)
+        return TRUE;
+
+    /* Copy the stack size.  */
+    for (i = 0; i < elf_elfheader (ibfd)->e_phnum; i++) {
+        if (elf_tdata (ibfd)->phdr[i].p_type == PT_GNU_STACK) {
+			Elf_Internal_Phdr *iphdr = &elf_tdata (ibfd)->phdr[i];
+
+			for (i = 0; i < elf_elfheader (obfd)->e_phnum; i++)
+                if (elf_tdata (obfd)->phdr[i].p_type == PT_GNU_STACK) {
+                    memcpy (&elf_tdata (obfd)->phdr[i], iphdr, sizeof (*iphdr));
+
+                    /* Rewrite the phdrs, since we're only called after they were first written.  */
+                    if (bfd_seek (obfd, (bfd_signed_vma) get_elf_backend_data (obfd)->s->sizeof_ehdr, SEEK_SET) != 0
+                        || get_elf_backend_data (obfd)->s->write_out_phdrs (obfd, elf_tdata (obfd)->phdr, elf_elfheader (obfd)->e_phnum) != 0)
+					return FALSE;
+                break;
+             }
+        break;
+        }
+    }
+  }
+
   return TRUE;
 }
 
