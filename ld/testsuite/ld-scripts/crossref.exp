@@ -57,6 +57,10 @@ if [istarget tic6x*-*-*] {
     set CFLAGS "-mno-dsbt -msdata=none"
 }
 
+if [istarget arm-*-linux-uclibceabi] {
+    set CFLAGS "$CFLAGS -mno-fdpic"
+}
+
 if { ![ld_compile $CC "$srcdir/$subdir/cross1.c" tmpdir/cross1.o] \
      || ![ld_compile $CC "$srcdir/$subdir/cross2.c" tmpdir/cross2.o] } {
     unresolved $test1

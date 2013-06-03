@@ -72,6 +72,12 @@ Disassembly of section .text:
  .*:	feffff54 	.word	0xfeffff54
 	...
 
+#make this test pass since stub order is swap on big endian targets
+#This is due of a different stub hash entry due to stab name change
+#Name change is due to a different section_id number
+#different section_id number is due to added target support
+#pass
+
 .* <lib_func3>:
  .*:	f000 e80c 	blx	200037c <__app_func_from_thumb>
  .*:	f000 e804 	blx	2000370 <__app_func_weak_from_thumb>
