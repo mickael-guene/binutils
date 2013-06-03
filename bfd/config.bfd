@@ -283,7 +283,7 @@ case "${targ}" in
   arm*-*-uclinux* | arm-*-kfreebsd*-gnu | \
   arm*-*-eabi* )
     targ_defvec=bfd_elf32_littlearm_vec
-    targ_selvecs="bfd_elf32_bigarm_vec bfd_elf32_littlearm_fdpic_vec bfd_elf32_bigarm_fdpic_vec"
+    targ_selvecs="bfd_elf32_littlearm_fdpic_vec bfd_elf32_bigarm_fdpic_vec bfd_elf32_bigarm_vec"
     ;;
   arm*-*-vxworks | arm*-*-windiss)
     targ_defvec=bfd_elf32_littlearm_vxworks_vec

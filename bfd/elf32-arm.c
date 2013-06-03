@@ -16141,6 +16141,8 @@ const struct elf_size_info elf32_arm_size_info =
 #define TARGET_BIG_SYM                  bfd_elf32_bigarm_fdpic_vec
 #undef  TARGET_BIG_NAME
 #define TARGET_BIG_NAME                 "elf32-bigarm-fdpic"
+#undef elf_match_priority
+#define elf_match_priority				128
 
 /* Like elf32_arm_link_hash_table_create -- but overrides
    appropriately for fdpic.  */
@@ -16200,6 +16202,7 @@ elf32_armfdpic_omit_section_dynsym (bfd *output_bfd ATTRIBUTE_UNUSED,
 
 #undef elf_backend_modify_program_headers
 #undef elf_backend_omit_section_dynsym
+#undef elf_match_priority
 
 /* VxWorks Targets.  */
 
