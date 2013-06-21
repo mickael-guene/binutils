@@ -120,7 +120,9 @@ if { ([istarget "i?86-*-elf*"]
     binutils_test objcopy "-z relro -shared" relro2
 }
 
-binutils_test strip "-T ${srcdir}/${subdir}/lma.lnk" lma
+if { ![istarget "arm-*-linux-uclibceabi"] } {
+    binutils_test strip "-T ${srcdir}/${subdir}/lma.lnk" lma
+}
 
 set tls_tests { "tdata1" "tdata2" }
 # hppa64 has its own .tbss section, with different flags.
