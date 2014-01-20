@@ -405,7 +405,10 @@ gld${EMULATION_NAME}_finish (void)
       h = bfd_link_hash_lookup (link_info.hash, entry_symbol.name,
 				FALSE, FALSE, TRUE);
       eh = (struct elf_link_hash_entry *)h;
-      if (!h || eh->target_internal != ST_BRANCH_TO_THUMB)
+      /* handle the special case of _start symbol has be seen but is not in the final image.
+       * This is the case for example when a shared library is link against the dynamic linker
+      */
+      if (!h || eh->target_internal != ST_BRANCH_TO_THUMB || !h->u.def.section->output_section)
 	return;
     }
 
