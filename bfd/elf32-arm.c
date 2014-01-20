@@ -2120,6 +2120,20 @@ static const bfd_vma elf32_arm_fdpic_plt_entry [] =
     0xe599c004,    /* ldr     r12, [r9, #4] */
     0xe599f000,    /* ldr     pc, [r9] */
   };
+/* last 5 words contain plt lazy fragment code and data */
+static const bfd_vma elf32_arm_fdpic_thumb_plt_entry [] =
+  {
+    0xc00cf8df,    /* ldr     r12, .L1 */
+    0x0c09eb0c,    /* add     r12, r12, r9 */
+    0x9004f8dc,    /* ldr     r9, [r12, #4] */
+    0xf000f8dc,    /* ldr     pc, [r12] */
+    0x00000000,    /* .L1     .word   foo(GOTOFFFUNCDESC) */
+    0x00000000,    /* .L2     .word   funcdesc_value_reloc_offset(foo) */
+    0xc008f85f,    /* ldr     r12, .L2 */
+    0xcd04f84d,    /* push    {r12} */
+    0xc004f8d9,    /* ldr     r12, [r9, #4] */
+    0xf000f8d9,    /* ldr     pc, [r9] */
+  };
 
 #if FOUR_WORD_PLT
 
@@ -3169,6 +3183,7 @@ elf32_arm_get_plt_info (bfd *abfd, struct elf32_arm_link_hash_entry *h,
   return TRUE;
 }
 
+static bfd_boolean using_thumb_only (struct elf32_arm_link_hash_table *globals);
 /* Return true if the PLT described by ARM_PLT requires a Thumb stub
    before it.  */
 
@@ -3179,8 +3194,9 @@ elf32_arm_plt_needs_thumb_stub_p (struct bfd_link_info *info,
   struct elf32_arm_link_hash_table *htab;
 
   htab = elf32_arm_hash_table (info);
-  return (arm_plt->thumb_refcount != 0
-	  || (!htab->use_blx && arm_plt->maybe_thumb_refcount != 0));
+
+  return (!using_thumb_only(htab) && (arm_plt->thumb_refcount != 0
+	  || (!htab->use_blx && arm_plt->maybe_thumb_refcount != 0)));
 }
 
 /* Return a pointer to the head of the dynamic reloc list that should
@@ -7700,22 +7716,24 @@ elf32_arm_populate_plt_entry (bfd *output_bfd, struct bfd_link_info *info,
 	}
 	  else if (htab->fdpic_p)
 	{
+        const bfd_vma *plt_entry = using_thumb_only(htab)?elf32_arm_fdpic_thumb_plt_entry:elf32_arm_fdpic_plt_entry;
+
 		/* fill-up thumb stub if needed */
     if (elf32_arm_plt_needs_thumb_stub_p (info, arm_plt)) {
       put_thumb_insn (htab, output_bfd, elf32_arm_plt_thumb_stub[0], ptr - 4);
       put_thumb_insn (htab, output_bfd, elf32_arm_plt_thumb_stub[1], ptr - 2);
     }
-    put_arm_insn(htab, output_bfd,elf32_arm_fdpic_plt_entry[0] , ptr + 0);
-    put_arm_insn(htab, output_bfd,elf32_arm_fdpic_plt_entry[1] , ptr + 4);
-    put_arm_insn(htab, output_bfd,elf32_arm_fdpic_plt_entry[2] , ptr + 8);
-    put_arm_insn(htab, output_bfd,elf32_arm_fdpic_plt_entry[3] , ptr + 12);
+    put_arm_insn(htab, output_bfd, plt_entry[0] , ptr + 0);
+    put_arm_insn(htab, output_bfd, plt_entry[1] , ptr + 4);
+    put_arm_insn(htab, output_bfd, plt_entry[2] , ptr + 8);
+    put_arm_insn(htab, output_bfd, plt_entry[3] , ptr + 12);
     bfd_put_32 (output_bfd, got_offset, ptr + 16);
     if (!(info->flags & DF_BIND_NOW)) {
       bfd_put_32 (output_bfd, htab->root.srelplt->reloc_count * RELOC_SIZE (htab), ptr + 20); //funcdesc_value_reloc_offset
-      put_arm_insn(htab, output_bfd,elf32_arm_fdpic_plt_entry[6] , ptr + 24);
-      put_arm_insn(htab, output_bfd,elf32_arm_fdpic_plt_entry[7] , ptr + 28);
-      put_arm_insn(htab, output_bfd,elf32_arm_fdpic_plt_entry[8] , ptr + 32);
-    put_arm_insn(htab, output_bfd,elf32_arm_fdpic_plt_entry[9] , ptr + 36);
+      put_arm_insn(htab, output_bfd, plt_entry[6] , ptr + 24);
+      put_arm_insn(htab, output_bfd, plt_entry[7] , ptr + 28);
+      put_arm_insn(htab, output_bfd, plt_entry[8] , ptr + 32);
+      put_arm_insn(htab, output_bfd, plt_entry[9] , ptr + 36);
     }
 	}
       else
@@ -8874,7 +8892,8 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 		if (globals->use_blx && r_type == R_ARM_THM_CALL)
 		  {
 		    /* Convert BL to BLX.  */
-		    lower_insn = (lower_insn & ~0x1000) | 0x0800;
+            if (!using_thumb_only(globals))
+		        lower_insn = (lower_insn & ~0x1000) | 0x0800;
 		  }
 		else if ((   r_type != R_ARM_THM_CALL)
 			 && (r_type != R_ARM_THM_JUMP24))
@@ -8937,7 +8956,8 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 		    if ((stub_entry
 			 && !arm_stub_is_thumb (stub_entry->stub_type))
 			|| branch_type != ST_BRANCH_TO_THUMB)
-		      lower_insn = (lower_insn & ~0x1000) | 0x0800;
+              if (!using_thumb_only(globals))
+		        lower_insn = (lower_insn & ~0x1000) | 0x0800;
 		  }
 	      }
 	  }
@@ -8951,11 +8971,13 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 
 	    if (globals->use_blx && r_type == R_ARM_THM_CALL)
 	      {
-		/* If the Thumb BLX instruction is available, convert
-		   the BL to a BLX instruction to call the ARM-mode
-		   PLT entry.  */
-		lower_insn = (lower_insn & ~0x1000) | 0x0800;
-		branch_type = ST_BRANCH_TO_ARM;
+          if (!using_thumb_only(globals)) {
+		    /* If the Thumb BLX instruction is available, convert
+		       the BL to a BLX instruction to call the ARM-mode
+		       PLT entry.  */
+		    lower_insn = (lower_insn & ~0x1000) | 0x0800;
+		    branch_type = ST_BRANCH_TO_ARM;
+            }
 	      }
 	    else
 	      {
