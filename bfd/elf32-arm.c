@@ -9749,7 +9749,7 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 		      + input_section->output_offset + rel->r_offset));
 
     /* fixup semantic */
-    if (r_type == R_ARM_TLS_IE32) {
+    if (r_type == R_ARM_TLS_IE32 || r_type == R_ARM_TLS_GD32 || r_type == R_ARM_TLS_LDM32) {
         value = globals->root.sgot->output_offset + off;
         bfd_put_32(output_bfd, value, contents + rel->r_offset);
         return bfd_reloc_ok;
