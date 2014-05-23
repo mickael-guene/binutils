@@ -9748,6 +9748,13 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 		   - (input_section->output_section->vma
 		      + input_section->output_offset + rel->r_offset));
 
+    /* fixup semantic */
+    if (r_type == R_ARM_TLS_IE32) {
+        value = globals->root.sgot->output_offset + off;
+        bfd_put_32(output_bfd, value, contents + rel->r_offset);
+        return bfd_reloc_ok;
+    }
+
 	return _bfd_final_link_relocate (howto, input_bfd, input_section,
 					 contents, rel->r_offset, value,
 					 rel->r_addend);
