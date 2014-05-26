@@ -14847,8 +14847,17 @@ elf32_arm_finish_dynamic_sections (bfd * output_bfd, struct bfd_link_info * info
     arm_elf_add_rofixup(output_bfd, htab->srofixup, got_value);
 
     /* Make sure we allocated and generated the same number of fixups.  */
+#if 0
     if (htab->srofixup->reloc_count * 4 != htab->srofixup->size)
       abort();
+#else
+    /* Temporary fix untill we remove useless relocations */
+    if (htab->srofixup->reloc_count * 4 > htab->srofixup->size)
+        abort();
+    while (htab->srofixup->reloc_count * 4 != htab->srofixup->size) {
+        arm_elf_add_rofixup(output_bfd, htab->srofixup, got_value);
+    }
+#endif
   }
 
   return TRUE;
