@@ -9400,13 +9400,21 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 	    globals->tls_ldm_got.offset |= 1;
 	  }
 
-	value = sgot->output_section->vma + sgot->output_offset + off
-	  - (input_section->output_section->vma + input_section->output_offset + rel->r_offset);
+    if (globals->fdpic_p) {
+        bfd_put_32(output_bfd,
+                   globals->root.sgot->output_offset + off,
+                   contents + rel->r_offset);
 
-	return _bfd_final_link_relocate (howto, input_bfd, input_section,
-					 contents, rel->r_offset, value,
-					 rel->r_addend);
-      }
+        return bfd_reloc_ok;
+    } else {
+	    value = sgot->output_section->vma + sgot->output_offset + off
+	            - (input_section->output_section->vma + input_section->output_offset + rel->r_offset);
+
+	    return _bfd_final_link_relocate (howto, input_bfd, input_section,
+					                     contents, rel->r_offset, value,
+					                     rel->r_addend);
+    }
+    }
 
     case R_ARM_TLS_CALL:
     case R_ARM_THM_TLS_CALL:
@@ -9748,17 +9756,20 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 		   - (input_section->output_section->vma
 		      + input_section->output_offset + rel->r_offset));
 
-    /* fixup semantic */
-    if (r_type == R_ARM_TLS_IE32 || r_type == R_ARM_TLS_GD32 || r_type == R_ARM_TLS_LDM32) {
-        value = globals->root.sgot->output_offset + off;
-        bfd_put_32(output_bfd, value, contents + rel->r_offset);
-        return bfd_reloc_ok;
-    }
+    if (globals->fdpic_p && (r_type == R_ARM_TLS_GD32 ||
+                             r_type == R_ARM_TLS_IE32)) {
+        /* For fdpic relocations resolve to to the offset of the got entry from the start of got */
+        bfd_put_32(output_bfd,
+                   globals->root.sgot->output_offset + off,
+                   contents + rel->r_offset);
 
-	return _bfd_final_link_relocate (howto, input_bfd, input_section,
+        return bfd_reloc_ok;
+    } else {
+	    return _bfd_final_link_relocate (howto, input_bfd, input_section,
 					 contents, rel->r_offset, value,
 					 rel->r_addend);
-      }
+    }
+  }
 
     case R_ARM_TLS_LE32:
       if (info->shared && !info->pie)
