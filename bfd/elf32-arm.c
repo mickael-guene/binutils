@@ -13571,8 +13571,9 @@ allocate_dynrelocs_for_symbol (struct elf_link_hash_entry *h, void * inf)
 	  else if (info->shared)
 	    /* Reserve room for the GOT entry's R_ARM_RELATIVE relocation.  */
 	    elf32_arm_allocate_dynrelocs (info, htab->root.srelgot, 1);
-      else if (htab->fdpic_p)
+      else if (htab->fdpic_p && tls_type == GOT_NORMAL)
         /* Reserve room for rofixup for fdpic executable */
+        /* tls reloc no not need space since they are completly solved */
         htab->srofixup->size += 4;
 	}
     }
@@ -14065,7 +14066,7 @@ elf32_arm_size_dynamic_sections (bfd * output_bfd ATTRIBUTE_UNUSED,
 		elf32_arm_allocate_irelocs (info, srel, 1);
 	      else if ((info->shared && !(*local_tls_type & GOT_TLS_GDESC)))
 		elf32_arm_allocate_dynrelocs (info, srel, 1);
-          else if (htab->fdpic_p && !(*local_tls_type & GOT_TLS_GDESC)) /* FIXME : seems this is useless => remove it */
+          else if (htab->fdpic_p && *local_tls_type & GOT_NORMAL)
             htab->srofixup->size += 4;
 
         /* FIXME : seems we need to remove htab->fdpic_p since in case of static no dynreloc can be generated. See when gnu2 handling. */
@@ -14858,7 +14859,7 @@ elf32_arm_finish_dynamic_sections (bfd * output_bfd, struct bfd_link_info * info
     arm_elf_add_rofixup(output_bfd, htab->srofixup, got_value);
 
     /* Make sure we allocated and generated the same number of fixups.  */
-#if 0
+#if 1
     if (htab->srofixup->reloc_count * 4 != htab->srofixup->size)
       abort();
 #else
