@@ -2125,7 +2125,7 @@ typedef unsigned short int insn16;
    section.  */
 #define ELF_DYNAMIC_INTERPRETER     "/usr/lib/ld.so.1"
 
-#define DEFAULT_STACK_SIZE 0x20000
+#define DEFAULT_STACK_SIZE 0x8000
 
 static const unsigned long tls_trampoline [] =
   {
