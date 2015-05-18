@@ -1688,7 +1688,7 @@ static reloc_howto_type elf32_arm_howto_table_1[] =
 };
 
 /* 160 onwards: */
-static reloc_howto_type elf32_arm_howto_table_2[5] =
+static reloc_howto_type elf32_arm_howto_table_2[8] =
 {
   HOWTO (R_ARM_IRELATIVE,	/* type */
          0,                     /* rightshift */
@@ -1755,6 +1755,45 @@ static reloc_howto_type elf32_arm_howto_table_2[5] =
          0,                /* src_mask */
          0xffffffff,       /* dst_mask */
          FALSE),           /* pcrel_offset */
+  HOWTO (R_ARM_TLS_GD32_FDPIC,	/* type */
+         0,                     /* rightshift */
+         2,                     /* size (0 = byte, 1 = short, 2 = long) */
+         32,                    /* bitsize */
+         FALSE,                 /* pc_relative */
+         0,                     /* bitpos */
+         complain_overflow_bitfield,/* complain_on_overflow */
+         bfd_elf_generic_reloc,	    /* special_function */
+         "R_ARM_TLS_GD32_FDPIC",	/* name */
+         FALSE,			            /* partial_inplace */
+         0,		                    /* src_mask */
+         0xffffffff,		        /* dst_mask */
+         FALSE),                    /* pcrel_offset */
+  HOWTO (R_ARM_TLS_LDM32_FDPIC,	/* type */
+         0,                     /* rightshift */
+         2,                     /* size (0 = byte, 1 = short, 2 = long) */
+         32,                    /* bitsize */
+         FALSE,                 /* pc_relative */
+         0,                     /* bitpos */
+         complain_overflow_bitfield,/* complain_on_overflow */
+         bfd_elf_generic_reloc,	    /* special_function */
+         "R_ARM_TLS_LDM32_FDPIC",	/* name */
+         FALSE,			            /* partial_inplace */
+         0,		                    /* src_mask */
+         0xffffffff,		        /* dst_mask */
+         FALSE),                    /* pcrel_offset */
+  HOWTO (R_ARM_TLS_IE32_FDPIC,	/* type */
+         0,                     /* rightshift */
+         2,                     /* size (0 = byte, 1 = short, 2 = long) */
+         32,                    /* bitsize */
+         FALSE,                 /* pc_relative */
+         0,                     /* bitpos */
+         complain_overflow_bitfield,/* complain_on_overflow */
+         bfd_elf_generic_reloc,	    /* special_function */
+         "R_ARM_TLS_IE32_FDPIC",	/* name */
+         FALSE,			            /* partial_inplace */
+         0,		                    /* src_mask */
+         0xffffffff,		        /* dst_mask */
+         FALSE),                    /* pcrel_offset */
 };
 
 /* 249-255 extended, currently unused, relocations:  */
@@ -1904,6 +1943,9 @@ static const struct elf32_arm_reloc_map elf32_arm_reloc_map[] =
     {BFD_RELOC_ARM_GOTOFFFUNCDESC,	 R_ARM_GOTOFFFUNCDESC},
     {BFD_RELOC_ARM_FUNCDESC,	     R_ARM_FUNCDESC},
     {BFD_RELOC_ARM_FUNCDESC_VALUE,	 R_ARM_FUNCDESC_VALUE},
+    {BFD_RELOC_ARM_TLS_GD32_FDPIC,	 R_ARM_TLS_GD32_FDPIC},
+    {BFD_RELOC_ARM_TLS_LDM32_FDPIC,	 R_ARM_TLS_LDM32_FDPIC},
+    {BFD_RELOC_ARM_TLS_IE32_FDPIC,	 R_ARM_TLS_IE32_FDPIC},
     {BFD_RELOC_VTABLE_INHERIT,	     R_ARM_GNU_VTINHERIT},
     {BFD_RELOC_VTABLE_ENTRY,	     R_ARM_GNU_VTENTRY},
     {BFD_RELOC_ARM_MOVW,	     R_ARM_MOVW_ABS_NC},
@@ -2083,7 +2125,7 @@ typedef unsigned short int insn16;
    section.  */
 #define ELF_DYNAMIC_INTERPRETER     "/usr/lib/ld.so.1"
 
-#define DEFAULT_STACK_SIZE 0x20000
+#define DEFAULT_STACK_SIZE 0x8000
 
 static const unsigned long tls_trampoline [] =
   {
@@ -2947,7 +2989,7 @@ struct elf32_arm_link_hash_table
   /* Offset in .plt section of tls_arm_trampoline.  */
   bfd_vma tls_trampoline;
 
-  /* Data for R_ARM_TLS_LDM32 relocations.  */
+  /* Data for R_ARM_TLS_LDM32/R_ARM_TLS_LDM32_FDPIC relocations.  */
   union
   {
     bfd_signed_vma refcount;
@@ -9384,6 +9426,7 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 				       rel->r_addend);
 
     case R_ARM_TLS_LDM32:
+    case R_ARM_TLS_LDM32_FDPIC:
       {
 	bfd_vma off;
 
@@ -9422,18 +9465,28 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 	    globals->tls_ldm_got.offset |= 1;
 	  }
 
-	value = sgot->output_section->vma + sgot->output_offset + off
-	  - (input_section->output_section->vma + input_section->output_offset + rel->r_offset);
+    if (r_type == R_ARM_TLS_LDM32_FDPIC) {
+        bfd_put_32(output_bfd,
+                   globals->root.sgot->output_offset + off,
+                   contents + rel->r_offset);
 
-	return _bfd_final_link_relocate (howto, input_bfd, input_section,
-					 contents, rel->r_offset, value,
-					 rel->r_addend);
-      }
+        return bfd_reloc_ok;
+    } else {
+	    value = sgot->output_section->vma + sgot->output_offset + off
+	            - (input_section->output_section->vma + input_section->output_offset + rel->r_offset);
+
+	    return _bfd_final_link_relocate (howto, input_bfd, input_section,
+					                     contents, rel->r_offset, value,
+					                     rel->r_addend);
+    }
+    }
 
     case R_ARM_TLS_CALL:
     case R_ARM_THM_TLS_CALL:
     case R_ARM_TLS_GD32:
+    case R_ARM_TLS_GD32_FDPIC:
     case R_ARM_TLS_IE32:
+    case R_ARM_TLS_IE32_FDPIC:
     case R_ARM_TLS_GOTDESC:
     case R_ARM_TLS_DESCSEQ:
     case R_ARM_THM_TLS_DESCSEQ:
@@ -9618,7 +9671,7 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 	      local_got_offsets[r_symndx] |= 1;
 	  }
 
-	if ((tls_type & GOT_TLS_GD) && r_type != R_ARM_TLS_GD32)
+	if ((tls_type & GOT_TLS_GD) && r_type != R_ARM_TLS_GD32 && r_type != R_ARM_TLS_GD32_FDPIC)
 	  off += 8;
 	else if (tls_type & GOT_TLS_GDESC)
 	  off = offplt;
@@ -9770,10 +9823,20 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 		   - (input_section->output_section->vma
 		      + input_section->output_offset + rel->r_offset));
 
-	return _bfd_final_link_relocate (howto, input_bfd, input_section,
+    if (globals->fdpic_p && (r_type == R_ARM_TLS_GD32_FDPIC ||
+                             r_type == R_ARM_TLS_IE32_FDPIC)) {
+        /* For fdpic relocations resolve to to the offset of the got entry from the start of got */
+        bfd_put_32(output_bfd,
+                   globals->root.sgot->output_offset + off,
+                   contents + rel->r_offset);
+
+        return bfd_reloc_ok;
+    } else {
+	    return _bfd_final_link_relocate (howto, input_bfd, input_section,
 					 contents, rel->r_offset, value,
 					 rel->r_addend);
-      }
+    }
+  }
 
     case R_ARM_TLS_LE32:
       if (info->shared && !info->pie)
@@ -10561,13 +10624,16 @@ arm_add_to_rel (bfd *              abfd,
 
 #define IS_ARM_TLS_RELOC(R_TYPE)	\
   ((R_TYPE) == R_ARM_TLS_GD32		\
+   || (R_TYPE) == R_ARM_TLS_GD32_FDPIC  \
    || (R_TYPE) == R_ARM_TLS_LDO32	\
    || (R_TYPE) == R_ARM_TLS_LDM32	\
+   || (R_TYPE) == R_ARM_TLS_LDM32_FDPIC	\
    || (R_TYPE) == R_ARM_TLS_DTPOFF32	\
    || (R_TYPE) == R_ARM_TLS_DTPMOD32	\
    || (R_TYPE) == R_ARM_TLS_TPOFF32	\
    || (R_TYPE) == R_ARM_TLS_LE32	\
    || (R_TYPE) == R_ARM_TLS_IE32	\
+   || (R_TYPE) == R_ARM_TLS_IE32_FDPIC	\
    || IS_ARM_TLS_GNU_RELOC (R_TYPE))
 
 /* Specific set of relocations for the gnu tls dialect.  */
@@ -12496,7 +12562,9 @@ elf32_arm_gc_sweep_hook (bfd *                     abfd,
 	case R_ARM_GOT32:
 	case R_ARM_GOT_PREL:
 	case R_ARM_TLS_GD32:
+	case R_ARM_TLS_GD32_FDPIC:
 	case R_ARM_TLS_IE32:
+	case R_ARM_TLS_IE32_FDPIC:
 	  if (h != NULL)
 	    {
 	      if (h->got.refcount > 0)
@@ -12510,6 +12578,7 @@ elf32_arm_gc_sweep_hook (bfd *                     abfd,
 	  break;
 
 	case R_ARM_TLS_LDM32:
+	case R_ARM_TLS_LDM32_FDPIC:
 	  globals->tls_ldm_got.refcount -= 1;
 	  break;
 
@@ -12756,7 +12825,9 @@ elf32_arm_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	  case R_ARM_GOT32:
 	  case R_ARM_GOT_PREL:
 	  case R_ARM_TLS_GD32:
+	  case R_ARM_TLS_GD32_FDPIC:
 	  case R_ARM_TLS_IE32:
+	  case R_ARM_TLS_IE32_FDPIC:
 	  case R_ARM_TLS_GOTDESC:
 	  case R_ARM_TLS_DESCSEQ:
 	  case R_ARM_THM_TLS_DESCSEQ:
@@ -12769,9 +12840,11 @@ elf32_arm_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	      switch (r_type)
 		{
 		case R_ARM_TLS_GD32: tls_type = GOT_TLS_GD; break;
-		  
+        case R_ARM_TLS_GD32_FDPIC: tls_type = GOT_TLS_GD; break;
+
 		case R_ARM_TLS_IE32: tls_type = GOT_TLS_IE; break;
-		  
+		case R_ARM_TLS_IE32_FDPIC: tls_type = GOT_TLS_IE; break;
+
 		case R_ARM_TLS_GOTDESC:
 		case R_ARM_TLS_CALL: case R_ARM_THM_TLS_CALL:
 		case R_ARM_TLS_DESCSEQ: case R_ARM_THM_TLS_DESCSEQ:
@@ -12825,7 +12898,8 @@ elf32_arm_check_relocs (bfd *abfd, struct bfd_link_info *info,
 	    /* Fall through.  */
 
 	  case R_ARM_TLS_LDM32:
-	    if (r_type == R_ARM_TLS_LDM32)
+	  case R_ARM_TLS_LDM32_FDPIC:
+	    if (r_type == R_ARM_TLS_LDM32 || r_type == R_ARM_TLS_LDM32_FDPIC)
 		htab->tls_ldm_got.refcount++;
 	    /* Fall through.  */
 
@@ -13517,7 +13591,7 @@ allocate_dynrelocs_for_symbol (struct elf_link_hash_entry *h, void * inf)
 
 	      if (tls_type & GOT_TLS_GD)
 		{
-		  /* R_ARM_TLS_GD32 needs 2 consecutive GOT slots.  If
+		  /* R_ARM_TLS_GD32 and R_ARM_TLS_GD32_FDPIC needs 2 consecutive GOT slots.  If
 		     the symbol is both GD and GDESC, got.offset may
 		     have been overwritten.  */
 		  h->got.offset = s->size;
@@ -13525,7 +13599,7 @@ allocate_dynrelocs_for_symbol (struct elf_link_hash_entry *h, void * inf)
 		}
 
 	      if (tls_type & GOT_TLS_IE)
-		/* R_ARM_TLS_IE32 needs one GOT slot.  */
+		/* R_ARM_TLS_IE32/R_ARM_TLS_IE32_FDPIC needs one GOT slot.  */
 		s->size += 4;
 	    }
 
@@ -13575,8 +13649,9 @@ allocate_dynrelocs_for_symbol (struct elf_link_hash_entry *h, void * inf)
 	  else if (info->shared)
 	    /* Reserve room for the GOT entry's R_ARM_RELATIVE relocation.  */
 	    elf32_arm_allocate_dynrelocs (info, htab->root.srelgot, 1);
-      else if (htab->fdpic_p)
+      else if (htab->fdpic_p && tls_type == GOT_NORMAL)
         /* Reserve room for rofixup for fdpic executable */
+        /* tls reloc no not need space since they are completly solved */
         htab->srofixup->size += 4;
 	}
     }
@@ -14067,12 +14142,12 @@ elf32_arm_size_dynamic_sections (bfd * output_bfd ATTRIBUTE_UNUSED,
 		  && (local_iplt == NULL
 		      || local_iplt->arm.noncall_refcount == 0))
 		elf32_arm_allocate_irelocs (info, srel, 1);
-	      else if ((info->shared && !(*local_tls_type & GOT_TLS_GDESC))
-		       || *local_tls_type & GOT_TLS_GD)
+	      else if ((info->shared && !(*local_tls_type & GOT_TLS_GDESC)))
 		elf32_arm_allocate_dynrelocs (info, srel, 1);
-          else if (htab->fdpic_p && !(*local_tls_type & GOT_TLS_GDESC))
+          else if (htab->fdpic_p && *local_tls_type & GOT_NORMAL)
             htab->srofixup->size += 4;
 
+        /* FIXME : seems we need to remove htab->fdpic_p since in case of static no dynreloc can be generated. See when gnu2 handling. */
 	      if ((info->shared || htab->fdpic_p) && *local_tls_type & GOT_TLS_GDESC)
 		{
 		  elf32_arm_allocate_dynrelocs (info, htab->root.srelplt, 1);
@@ -14087,7 +14162,7 @@ elf32_arm_size_dynamic_sections (bfd * output_bfd ATTRIBUTE_UNUSED,
   if (htab->tls_ldm_got.refcount > 0)
     {
       /* Allocate two GOT entries and one dynamic relocation (if necessary)
-	 for R_ARM_TLS_LDM32 relocations.  */
+	 for R_ARM_TLS_LDM32/R_ARM_TLS_LDM32_FDPIC relocations.  */
       htab->tls_ldm_got.offset = htab->root.sgot->size;
       htab->root.sgot->size += 8;
       if (info->shared)
@@ -14862,8 +14937,17 @@ elf32_arm_finish_dynamic_sections (bfd * output_bfd, struct bfd_link_info * info
     arm_elf_add_rofixup(output_bfd, htab->srofixup, got_value);
 
     /* Make sure we allocated and generated the same number of fixups.  */
+#if 1
     if (htab->srofixup->reloc_count * 4 != htab->srofixup->size)
       abort();
+#else
+    /* Temporary fix untill we remove useless relocations */
+    if (htab->srofixup->reloc_count * 4 > htab->srofixup->size)
+        abort();
+    while (htab->srofixup->reloc_count * 4 != htab->srofixup->size) {
+        arm_elf_add_rofixup(output_bfd, htab->srofixup, got_value);
+    }
+#endif
   }
 
   return TRUE;

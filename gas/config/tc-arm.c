@@ -16847,6 +16847,9 @@ static struct reloc_entry reloc_names[] =
   { "gotfuncdesc", BFD_RELOC_ARM_GOTFUNCDESC },         { "GOTFUNCDESC", BFD_RELOC_ARM_GOTFUNCDESC },
   { "gotofffuncdesc", BFD_RELOC_ARM_GOTOFFFUNCDESC },   { "GOTOFFFUNCDESC", BFD_RELOC_ARM_GOTOFFFUNCDESC },
   { "funcdesc", BFD_RELOC_ARM_FUNCDESC },               { "FUNCDESC", BFD_RELOC_ARM_FUNCDESC },
+  { "tlsgd_fdpic", BFD_RELOC_ARM_TLS_GD32_FDPIC },      { "TLSGD_FDPIC", BFD_RELOC_ARM_TLS_GD32_FDPIC },
+  { "tlsldm_fdpic", BFD_RELOC_ARM_TLS_LDM32_FDPIC },    { "TLSLDM_FDPIC", BFD_RELOC_ARM_TLS_LDM32_FDPIC },
+  { "gottpoff_fdpic", BFD_RELOC_ARM_TLS_IE32_FDPIC },   { "GOTTPOFF_FDIC", BFD_RELOC_ARM_TLS_IE32_FDPIC },
   { "got",     BFD_RELOC_ARM_GOT32   },	 { "GOT",     BFD_RELOC_ARM_GOT32   },
   { "gotoff",  BFD_RELOC_ARM_GOTOFF  },	 { "GOTOFF",  BFD_RELOC_ARM_GOTOFF  },
   { "plt",     BFD_RELOC_ARM_PLT32   },	 { "PLT",     BFD_RELOC_ARM_PLT32   },
@@ -21191,9 +21194,12 @@ md_apply_fix (fixS *	fixP,
 
     case BFD_RELOC_ARM_TLS_GOTDESC:
     case BFD_RELOC_ARM_TLS_GD32:
+    case BFD_RELOC_ARM_TLS_GD32_FDPIC:
     case BFD_RELOC_ARM_TLS_LE32:
     case BFD_RELOC_ARM_TLS_IE32:
+    case BFD_RELOC_ARM_TLS_IE32_FDPIC:
     case BFD_RELOC_ARM_TLS_LDM32:
+    case BFD_RELOC_ARM_TLS_LDM32_FDPIC:
     case BFD_RELOC_ARM_TLS_LDO32:
       S_SET_THREAD_LOCAL (fixP->fx_addsy);
       /* fall through */
@@ -21856,8 +21862,11 @@ tc_gen_reloc (asection *section, fixS *fixp)
 
     case BFD_RELOC_ARM_TLS_GOTDESC:
     case BFD_RELOC_ARM_TLS_GD32:
+    case BFD_RELOC_ARM_TLS_GD32_FDPIC:
     case BFD_RELOC_ARM_TLS_IE32:
+    case BFD_RELOC_ARM_TLS_IE32_FDPIC:
     case BFD_RELOC_ARM_TLS_LDM32:
+    case BFD_RELOC_ARM_TLS_LDM32_FDPIC:
       /* BFD will include the symbol's address in the addend.
 	 But we don't want that, so subtract it out again here.  */
       if (!S_IS_COMMON (fixp->fx_addsy))
@@ -22123,9 +22132,12 @@ arm_fix_adjustable (fixS * fixP)
       || fixP->fx_r_type == BFD_RELOC_ARM_GOT32
       || fixP->fx_r_type == BFD_RELOC_ARM_GOTOFF
       || fixP->fx_r_type == BFD_RELOC_ARM_TLS_GD32
+      || fixP->fx_r_type == BFD_RELOC_ARM_TLS_GD32_FDPIC
       || fixP->fx_r_type == BFD_RELOC_ARM_TLS_LE32
       || fixP->fx_r_type == BFD_RELOC_ARM_TLS_IE32
+      || fixP->fx_r_type == BFD_RELOC_ARM_TLS_IE32_FDPIC
       || fixP->fx_r_type == BFD_RELOC_ARM_TLS_LDM32
+      || fixP->fx_r_type == BFD_RELOC_ARM_TLS_LDM32_FDPIC
       || fixP->fx_r_type == BFD_RELOC_ARM_TLS_LDO32
       || fixP->fx_r_type == BFD_RELOC_ARM_TLS_GOTDESC
       || fixP->fx_r_type == BFD_RELOC_ARM_TLS_CALL
