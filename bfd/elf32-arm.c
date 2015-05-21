@@ -15163,15 +15163,17 @@ elf32_arm_output_plt_map_1 (output_arch_syminfo *osi,
     }
   else if (htab->fdpic_p)
     {
+      enum map_symbol_type type = using_thumb_only(htab)?ARM_MAP_THUMB:ARM_MAP_ARM;
+
       if (elf32_arm_plt_needs_thumb_stub_p (osi->info, arm_plt))
         if (!elf32_arm_output_map_sym (osi, ARM_MAP_THUMB, addr - 4))
           return FALSE;
-      if (!elf32_arm_output_map_sym (osi, ARM_MAP_ARM, addr))
+      if (!elf32_arm_output_map_sym (osi, type, addr))
         return FALSE;
       if (!elf32_arm_output_map_sym (osi, ARM_MAP_DATA, addr + 16))
         return FALSE;
       if (htab->plt_entry_size == 4 * ARRAY_SIZE(elf32_arm_plt_entry))
-        if (!elf32_arm_output_map_sym (osi, ARM_MAP_ARM, addr + 24))
+        if (!elf32_arm_output_map_sym (osi, type, addr + 24))
           return FALSE;
     }
   else
