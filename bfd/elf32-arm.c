@@ -14520,6 +14520,10 @@ elf32_arm_finish_dynamic_symbol (bfd * output_bfd,
 	     and so the symbol would never be NULL.  */
 	  if (!h->ref_regular_nonweak)
 	    sym->st_value = 0;
+	  /* in thumb only target, plt is thumb code and so setup lsb bit of
+	     symbol to mark it as thumb code */
+	  else if (sym->st_value && using_thumb_only(htab))
+	    sym->st_value |= 1;
 	}
       else if (eh->is_iplt && eh->plt.noncall_refcount != 0)
 	{
