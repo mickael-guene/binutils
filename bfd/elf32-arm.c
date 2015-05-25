@@ -8346,6 +8346,9 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 	  value = (splt->output_section->vma
 		   + splt->output_offset
 		   + plt_offset);
+      /* in case we use thumb plt then be sure so set lsb */
+	  if (using_thumb_only(elf32_arm_hash_table (info)))
+	      value |= 1;
 	  *unresolved_reloc_p = FALSE;
 	  return _bfd_final_link_relocate (howto, input_bfd, input_section,
 					   contents, rel->r_offset, value,
