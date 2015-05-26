@@ -4926,7 +4926,8 @@ cortex_a8_erratum_scan (bfd *input_bfd,
                       /* If the stub will use a Thumb-mode branch to a
                          PLT target, redirect it to the preceding Thumb
                          entry point.  */
-                      if (stub_type != arm_stub_a8_veneer_blx && use_plt)
+                      /* unless we have thumb plt */
+                      if (stub_type != arm_stub_a8_veneer_blx && use_plt && !using_thumb_only(elf32_arm_hash_table (info)))
                         offset -= PLT_THUMB_STUB_SIZE;
 
                       target = pc_for_insn + offset;
@@ -9027,7 +9028,9 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 	    else
 	      {
 		/* Target the Thumb stub before the ARM PLT entry.  */
-		value -= PLT_THUMB_STUB_SIZE;
+		/* unless we have thumb plt */
+		if (!using_thumb_only(elf32_arm_hash_table (info)))
+		    value -= PLT_THUMB_STUB_SIZE;
 		branch_type = ST_BRANCH_TO_THUMB;
 	      }
 	    *unresolved_reloc_p = FALSE;
@@ -9125,7 +9128,9 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 		     + splt->output_offset
 		     + plt_offset);
 	    /* Target the Thumb stub before the ARM PLT entry.  */
-	    value -= PLT_THUMB_STUB_SIZE;
+	    /* unless we have thumb plt */
+		if (!using_thumb_only(elf32_arm_hash_table (info)))
+	        value -= PLT_THUMB_STUB_SIZE;
 	    *unresolved_reloc_p = FALSE;
 	  }
 
