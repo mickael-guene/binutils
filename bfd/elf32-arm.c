@@ -16090,6 +16090,8 @@ elf32_arm_swap_symbol_out (bfd *abfd,
              and possibly for dynamic linker itself.
           */
           newsym.st_value |= 1;
+        } else if (newsym.st_value) {
+          newsym.st_value |= 1;
         }
 
       src = &newsym;
