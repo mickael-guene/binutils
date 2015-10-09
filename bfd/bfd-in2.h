@@ -3498,6 +3498,12 @@ pc-relative or some form of GOT-indirect relocation.  */
   BFD_RELOC_ARM_THUMB_IMM,
   BFD_RELOC_ARM_THUMB_SHIFT,
 
+/* FIXME : add comment when done */
+  BFD_RELOC_ARM_THUMB_ALU_ABS_GO_NC,
+  BFD_RELOC_ARM_THUMB_ALU_ABS_G1_NC,
+  BFD_RELOC_ARM_THUMB_ALU_ABS_G2_NC,
+  BFD_RELOC_ARM_THUMB_ALU_ABS_G3_NC,
+
 /* Renesas / SuperH SH relocs.  Not all of these appear in object files.  */
   BFD_RELOC_SH_PCDISP8BY2,
   BFD_RELOC_SH_PCDISP12BY2,
