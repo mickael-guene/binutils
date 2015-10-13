@@ -10477,7 +10477,7 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
         {
             const int shift_array[4] = {24, 16, 8, 0};
             bfd_vma insn = bfd_get_16 (input_bfd, hit_data);
-            bfd_vma addr = sym_sec ? sym_sec->output_section->vma : 0;
+            bfd_vma addr = value;
             int shift = shift_array[r_type - R_ARM_THM_ALU_ABS_G0_NC];
 
             if (globals->use_rel) {
