@@ -5307,22 +5307,22 @@ static struct group_reloc_table_entry group_reloc_table[] =
       BFD_RELOC_ARM_LDRS_SB_G2,		/* LDRS */
       BFD_RELOC_ARM_LDC_SB_G2 },    /* LDC */
     /* Absolute thumb alu relocation */
-    { "high_high",
+    { "low_low",
       BFD_RELOC_ARM_THUMB_ALU_ABS_G0_NC,    /* ALU */
       0,				                    /* LDR */
       0,				                    /* LDRS */
       0 },				                    /* LDC */
-    { "high_low",
+    { "low_high",
       BFD_RELOC_ARM_THUMB_ALU_ABS_G1_NC,    /* ALU */
       0,				                    /* LDR */
       0,				                    /* LDRS */
       0 },				                    /* LDC */
-    { "low_high",
+    { "high_low",
       BFD_RELOC_ARM_THUMB_ALU_ABS_G2_NC,    /* ALU */
       0,				                    /* LDR */
       0,				                    /* LDRS */
       0 },				                    /* LDC */
-    { "low_low",
+    { "high_high",
       BFD_RELOC_ARM_THUMB_ALU_ABS_G3_NC,    /* ALU */
       0,				                    /* LDR */
       0,				                    /* LDRS */
@@ -10255,7 +10255,7 @@ do_t_add_sub (void)
 		{
 		  inst.instruction = THUMB_OP16(opcode);
 		  inst.instruction |= (Rd << 4) | Rs;
-		  if (inst.reloc.type < BFD_RELOC_ARM_THUMB_ALU_ABS_G1_NC || inst.reloc.type > BFD_RELOC_ARM_THUMB_ALU_ABS_G3_NC)
+		  if (inst.reloc.type < BFD_RELOC_ARM_THUMB_ALU_ABS_G0_NC || inst.reloc.type > BFD_RELOC_ARM_THUMB_ALU_ABS_G2_NC)
 		    inst.reloc.type = BFD_RELOC_ARM_THUMB_ADD;
 		  if (inst.size_req != 2)
 		    inst.relax = opcode;
@@ -11607,7 +11607,7 @@ do_t_mov_cmp (void)
 	      inst.instruction = THUMB_OP16 (opcode);
 	      inst.instruction |= Rn << 8;
 	      if (inst.size_req == 2) {
-	        if (inst.reloc.type != BFD_RELOC_ARM_THUMB_ALU_ABS_G0_NC)
+	        if (inst.reloc.type != BFD_RELOC_ARM_THUMB_ALU_ABS_G3_NC)
 		        inst.reloc.type = BFD_RELOC_ARM_THUMB_IMM;
 	      } else
 		    inst.relax = opcode;
@@ -22965,7 +22965,7 @@ md_apply_fix (fixS *	fixP,
 	}
       return;
 
-   case BFD_RELOC_ARM_THUMB_ALU_ABS_G0_NC:
+   case BFD_RELOC_ARM_THUMB_ALU_ABS_G3_NC:
      gas_assert (!fixP->fx_done);
       if (!seg->use_rela_p)
         {
@@ -22989,9 +22989,9 @@ md_apply_fix (fixS *	fixP,
         }
      break;
 
+   case BFD_RELOC_ARM_THUMB_ALU_ABS_G0_NC:
    case BFD_RELOC_ARM_THUMB_ALU_ABS_G1_NC:
    case BFD_RELOC_ARM_THUMB_ALU_ABS_G2_NC:
-   case BFD_RELOC_ARM_THUMB_ALU_ABS_G3_NC:
       gas_assert (!fixP->fx_done);
       if (!seg->use_rela_p)
         {
