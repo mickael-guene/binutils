@@ -10464,47 +10464,27 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
       }
       return bfd_reloc_ok;
 
+    case R_ARM_THM_ALU_ABS_G0_NC:
+    case R_ARM_THM_ALU_ABS_G1_NC:
+    case R_ARM_THM_ALU_ABS_G2_NC:
     case R_ARM_THM_ALU_ABS_G3_NC:
         {
-            bfd_vma insn = bfd_get_16 (input_bfd, hit_data);
-            bfd_vma addr = value;
-
-            /* compute full address */
-            if (globals->use_rel)
-                signed_addend = insn & 0xff;
-            addr += signed_addend;
-            /* clean imm8 insn */
-            insn &= 0xff00;
-            /* upper byte go in mov imm8 field */
-            insn |= ((addr >> 24) & 0xff);
-
-            bfd_put_16 (input_bfd, insn, hit_data);
-        }
-
-      *unresolved_reloc_p = FALSE;
-      return bfd_reloc_ok;
-
-    case R_ARM_THM_ALU_ABS_G2_NC:
-    case R_ARM_THM_ALU_ABS_G1_NC:
-    case R_ARM_THM_ALU_ABS_G0_NC:
-        {
-            const int shift_array[4] = {0, 8, 16};
+            const int shift_array[4] = {0, 8, 16, 24};
             bfd_vma insn = bfd_get_16 (input_bfd, hit_data);
             bfd_vma addr = value;
             int shift = shift_array[r_type - R_ARM_THM_ALU_ABS_G0_NC];
 
-            if (globals->use_rel) {
-                int negative = insn&0x0800?-1:1;
-
+            /* compute address */
+            if (globals->use_rel)
                 signed_addend = insn & 0xff;
-                signed_addend *= negative;
-            }
             addr += signed_addend;
-            /* only keed rdn from insn */
-            insn &= 0x0700;
-            /* generate and adds with imm8 with the correct part */
-            insn |= 0x3000 | ((addr >> shift) & 0xff);
-
+	        if (branch_type == ST_BRANCH_TO_THUMB)
+	            addr |= 1;
+            /* clean imm8 insn ... */
+            insn &= 0xff00;
+            /* ... and update with correct part of address */
+            insn |= (addr >> shift) & 0xff;
+            /* update insn */
             bfd_put_16 (input_bfd, insn, hit_data);
         }
 
