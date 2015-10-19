@@ -23666,6 +23666,12 @@ arm_fix_adjustable (fixS * fixP)
       || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVT_PCREL)
     return FALSE;
 
+  /* BFD_RELOC_ARM_THUMB_ALU_ABS_Gx_NC relocations have VERY limited
+     offsets, so keep these symbols. */
+  if (fixP->fx_r_type >= BFD_RELOC_ARM_THUMB_ALU_ABS_G0_NC
+      && fixP->fx_r_type <= BFD_RELOC_ARM_THUMB_ALU_ABS_G3_NC)
+    return FALSE;
+
   return TRUE;
 }
 #endif /* defined (OBJ_ELF) || defined (OBJ_COFF) */
