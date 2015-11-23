@@ -3258,7 +3258,7 @@ ENUMX
 ENUMX
   BFD_RELOC_ARM_THUMB_ALU_ABS_G3_NC
 ENUMDOC
-  Thumb1 relocation to support execute only code.
+  Thumb1 relocations to support execute-only code.
 
 ENUM
   BFD_RELOC_ARM_IMMEDIATE

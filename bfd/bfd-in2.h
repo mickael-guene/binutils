@@ -3469,7 +3469,7 @@ pc-relative or some form of GOT-indirect relocation.  */
 /* ARM support for STT_GNU_IFUNC.  */
   BFD_RELOC_ARM_IRELATIVE,
 
-/* Thumb1 relocation to support execute only code.  */
+/* Thumb1 relocations to support execute-only code.  */
   BFD_RELOC_ARM_THUMB_ALU_ABS_G0_NC,
   BFD_RELOC_ARM_THUMB_ALU_ABS_G1_NC,
   BFD_RELOC_ARM_THUMB_ALU_ABS_G2_NC,

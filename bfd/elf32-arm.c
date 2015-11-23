@@ -1947,7 +1947,7 @@ static const struct elf32_arm_reloc_map elf32_arm_reloc_map[] =
     {BFD_RELOC_ARM_THUMB_ALU_ABS_G3_NC, R_ARM_THM_ALU_ABS_G3_NC},
     {BFD_RELOC_ARM_THUMB_ALU_ABS_G2_NC, R_ARM_THM_ALU_ABS_G2_NC},
     {BFD_RELOC_ARM_THUMB_ALU_ABS_G1_NC, R_ARM_THM_ALU_ABS_G1_NC},
-    {BFD_RELOC_ARM_THUMB_ALU_ABS_G0_NC, R_ARM_THM_ALU_ABS_G0_NC},
+    {BFD_RELOC_ARM_THUMB_ALU_ABS_G0_NC, R_ARM_THM_ALU_ABS_G0_NC}
   };
 
 static reloc_howto_type *
@@ -10491,8 +10491,8 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 	*unresolved_reloc_p = FALSE;
 	return bfd_reloc_ok;
 
-	default:
-	    return bfd_reloc_notsupported;
+    default:
+      return bfd_reloc_notsupported;
     }
 }
 
