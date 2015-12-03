@@ -10474,17 +10474,17 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 	    bfd_vma addr = value;
 	    int shift = shift_array[r_type - R_ARM_THM_ALU_ABS_G0_NC];
 
-	    /* compute address.  */
+	    /* Compute address.  */
 	    if (globals->use_rel)
 		signed_addend = insn & 0xff;
 	    addr += signed_addend;
 	    if (branch_type == ST_BRANCH_TO_THUMB)
 		addr |= 1;
-	    /* clean imm8 insn.  */
+	    /* Clean imm8 insn.  */
 	    insn &= 0xff00;
-	    /* and update with correct part of address.  */
+	    /* And update with correct part of address.  */
 	    insn |= (addr >> shift) & 0xff;
-	    /* update insn.  */
+	    /* Update insn.  */
 	    bfd_put_16 (input_bfd, insn, hit_data);
 	}
 
