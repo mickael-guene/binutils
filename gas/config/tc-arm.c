@@ -5307,22 +5307,22 @@ static struct group_reloc_table_entry group_reloc_table[] =
       BFD_RELOC_ARM_LDRS_SB_G2,		/* LDRS */
       BFD_RELOC_ARM_LDC_SB_G2 },	/* LDC */
     /* Absolute thumb alu relocations.  */
-    { "low_low",
+    { "lower0_7",
       BFD_RELOC_ARM_THUMB_ALU_ABS_G0_NC,/* ALU.  */
       0,				/* LDR.  */
       0,				/* LDRS.  */
       0 },				/* LDC.  */
-    { "low_high",
+    { "lower8_15",
       BFD_RELOC_ARM_THUMB_ALU_ABS_G1_NC,/* ALU.  */
       0,				/* LDR.  */
       0,				/* LDRS.  */
       0 },				/* LDC.  */
-    { "high_low",
+    { "upper0_7",
       BFD_RELOC_ARM_THUMB_ALU_ABS_G2_NC,/* ALU.  */
       0,				/* LDR.  */
       0,				/* LDRS.  */
       0 },				/* LDC.  */
-    { "high_high",
+    { "upper8_15",
       BFD_RELOC_ARM_THUMB_ALU_ABS_G3_NC,/* ALU.  */
       0,				/* LDR.  */
       0,				/* LDRS.  */

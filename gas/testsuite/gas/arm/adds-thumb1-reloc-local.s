@@ -3,10 +3,10 @@
 .syntax unified
 .thumb
 foo:
-adds r0, #:high_high:#bar
-adds r0, #:high_low:#bar
-adds r0, #:low_high:#bar
-adds r0, #:low_low:#bar
+adds r0, #:upper8_15:#bar
+adds r0, #:upper0_7:#bar
+adds r0, #:lower8_15:#bar
+adds r0, #:lower0_7:#bar
 
 .space 0x10000
 
