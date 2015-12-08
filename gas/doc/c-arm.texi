@@ -511,11 +511,11 @@ respectively.  For example to load the 32-bit address of foo into r0:
 @smallexample
         MOVS r0, #:upper8_15:#foo
         LSLS r0, r0, #8
-        ADDS r0, #:upper0_7:foo
+        ADDS r0, #:upper0_7:#foo
         LSLS r0, r0, #8
-        ADDS r0, #:lower8_15:foo
+        ADDS r0, #:lower8_15:#foo
         LSLS r0, r0, #8
-        ADDS r0, #:lower0_7:foo
+        ADDS r0, #:lower0_7:#foo
 @end smallexample
 
 @node ARM-Neon-Alignment
