@@ -14874,7 +14874,7 @@ elf32_arm_fake_sections (bfd * abfd, Elf_Internal_Shdr * hdr, asection * sec)
       hdr->sh_flags |= SHF_LINK_ORDER;
     }
 
-  if (sec->flags & SEC_COFF_NOREAD)
+  if (sec->flags & SEC_ELF_NOREAD)
     hdr->sh_flags |= SHF_ARM_NOREAD;
 
   return TRUE;
@@ -16257,7 +16257,7 @@ static bfd_boolean
 arm_elf_section_flags (flagword * flags, const Elf_Internal_Shdr * hdr)
 {
   if (hdr->sh_flags & SHF_ARM_NOREAD)
-    * flags |= SEC_COFF_NOREAD;
+    * flags |= SEC_ELF_NOREAD;
   return TRUE;
 }
 
