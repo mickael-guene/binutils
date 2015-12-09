@@ -16248,8 +16248,9 @@ elf32_arm_get_synthetic_symtab (bfd *abfd,
 static const struct bfd_elf_special_section
 elf32_arm_special_sections[] =
 {
-  { STRING_COMMA_LEN (".text.noread"),  -2, SHT_PROGBITS,      SHF_ALLOC + SHF_EXECINSTR + SHF_ARM_NOREAD },
-  { NULL,                             0, 0, 0,                 0 }
+  { STRING_COMMA_LEN (".text.noread"),  -2, SHT_PROGBITS,
+    SHF_ALLOC + SHF_EXECINSTR + SHF_ARM_NOREAD },
+  { NULL,			      0, 0, 0,			0 }
 };
 
 static bfd_boolean
@@ -16263,7 +16264,6 @@ arm_elf_section_flags (flagword * flags, const Elf_Internal_Shdr * hdr)
 static flagword
 arm_elf_lookup_section_flags (char *flag_name)
 {
-
   if (!strcmp (flag_name, "SHF_ARM_NOREAD"))
     return SHF_ARM_NOREAD;
 
