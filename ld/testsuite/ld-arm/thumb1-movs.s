@@ -4,8 +4,9 @@
 	.global	_start
 	.thumb_func
 	.type	_start, %function
-	.type	thumb1, %function
 _start:
+	.thumb_func
+	.type	thumb1, %function
 thumb1:
 	movs r0, #:upper8_15:#thumb3
 	movs r1, #:upper0_7:#thumb3
