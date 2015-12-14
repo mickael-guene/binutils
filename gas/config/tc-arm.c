@@ -22974,60 +22974,61 @@ md_apply_fix (fixS *	fixP,
    case BFD_RELOC_ARM_THUMB_ALU_ABS_G2_NC:
    case BFD_RELOC_ARM_THUMB_ALU_ABS_G3_NC:
       gas_assert (!fixP->fx_done);
-      if (!seg->use_rela_p)
-	{
-	  bfd_vma insn;
-	  bfd_boolean is_mov;
-	  bfd_vma encoded_addend = value;
+      {
+	bfd_vma insn;
+	bfd_boolean is_mov;
+	bfd_vma encoded_addend = value;
 
-	  /* Check that addend can be encoded.  */
-	  if (value < 0 || value > 255)
-	    as_bad_where (fixP->fx_file, fixP->fx_line,
+	/* Check that addend can be encoded in instruction.  */
+	if (!seg->use_rela_p && (value < 0 || value > 255))
+	  as_bad_where (fixP->fx_file, fixP->fx_line,
 			_("the offset 0x%08lX is not representable"),
 			(unsigned long) encoded_addend);
 
-	  /* Extract the instruction.  */
-	  insn = md_chars_to_number (buf, THUMB_SIZE);
-	  is_mov = (insn & 0xf800) == 0x2000;
+	/* Extract the instruction.  */
+	insn = md_chars_to_number (buf, THUMB_SIZE);
+	is_mov = (insn & 0xf800) == 0x2000;
 
-	  /* Encode insn.  */
-	  if (is_mov)
-	    {
+	/* Encode insn.  */
+	if (is_mov)
+	  {
+	    if (!seg->use_rela_p)
 	      insn |= encoded_addend;
-	    }
-	  else
-	    {
-	      int rd, rs;
+	  }
+	else
+	  {
+	    int rd, rs;
 
-	      /* Extract the instruction.  */
-	      /* Encoding is the following
-		 0x8000  SUB
-		 0x00F0  Rd
-		 0x000F  Rs
-	      */
-	      /* The following conditions must be true :
-		     - ADD
-		     - Rd == Rs
-		     - Rd <= 7
-	      */
-	      rd = (insn >> 4) & 0xf;
-	      rs = insn & 0xf;
-	      if ((insn & 0x8000) || (rd != rs) || rd > 7)
-		as_bad_where (fixP->fx_file, fixP->fx_line,
-		  _("Unable to process relocation for thumb opcode: %lx"),
-		  (unsigned long) insn);
+	    /* Extract the instruction.  */
+	     /* Encoding is the following
+		0x8000  SUB
+		0x00F0  Rd
+		0x000F  Rs
+	     */
+	     /* The following conditions must be true :
+		- ADD
+		- Rd == Rs
+		- Rd <= 7
+	     */
+	    rd = (insn >> 4) & 0xf;
+	    rs = insn & 0xf;
+	    if ((insn & 0x8000) || (rd != rs) || rd > 7)
+	      as_bad_where (fixP->fx_file, fixP->fx_line,
+			_("Unable to process relocation for thumb opcode: %lx"),
+			(unsigned long) insn);
 
-	      /* Encode as ADD immediate8 thumb 1 code.  */
-	      insn = 0x3000 | (rd << 8);
+	    /* Encode as ADD immediate8 thumb 1 code.  */
+	    insn = 0x3000 | (rd << 8);
 
-	      /* Place the encoded addend into the first 8 bits of the
-		 instruction.  */
+	    /* Place the encoded addend into the first 8 bits of the
+	       instruction.  */
+	    if (!seg->use_rela_p)
 	      insn |= encoded_addend;
-	    }
+	  }
 
-	  /* Update the instruction.  */
-	  md_number_to_chars (buf, insn, THUMB_SIZE);
-	}
+	/* Update the instruction.  */
+	md_number_to_chars (buf, insn, THUMB_SIZE);
+      }
       break;
 
    case BFD_RELOC_ARM_ALU_PC_G0_NC:
