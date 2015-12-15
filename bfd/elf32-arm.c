@@ -16256,7 +16256,7 @@ elf32_arm_special_sections[] =
 };
 
 static bfd_boolean
-arm_elf_section_flags (flagword *flags, const Elf_Internal_Shdr * hdr)
+elf32_arm_section_flags (flagword *flags, const Elf_Internal_Shdr * hdr)
 {
   if (hdr->sh_flags & SHF_ARM_NOREAD)
     *flags |= SEC_ELF_NOREAD;
@@ -16264,7 +16264,7 @@ arm_elf_section_flags (flagword *flags, const Elf_Internal_Shdr * hdr)
 }
 
 static flagword
-arm_elf_lookup_section_flags (char *flag_name)
+elf32_arm_lookup_section_flags (char *flag_name)
 {
   if (!strcmp (flag_name, "SHF_ARM_NOREAD"))
     return SHF_ARM_NOREAD;
@@ -16352,9 +16352,9 @@ arm_elf_lookup_section_flags (char *flag_name)
 #undef  elf_backend_special_sections
 #define elf_backend_special_sections 		elf32_arm_special_sections
 #undef elf_backend_section_flags
-#define elf_backend_section_flags		arm_elf_section_flags
+#define elf_backend_section_flags		elf32_arm_section_flags
 #undef elf_backend_lookup_section_flags_hook
-#define elf_backend_lookup_section_flags_hook   arm_elf_lookup_section_flags
+#define elf_backend_lookup_section_flags_hook   elf32_arm_lookup_section_flags
 
 #include "elf32-target.h"
 
