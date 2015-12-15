@@ -16163,16 +16163,18 @@ elf32_arm_get_synthetic_symtab (bfd *abfd,
 static const struct bfd_elf_special_section
 elf32_arm_special_sections[] =
 {
+/* Catch sections with .text.noread prefix and apply allocate, execute and
+   noread section attributes.  */
   { STRING_COMMA_LEN (".text.noread"),  -2, SHT_PROGBITS,
     SHF_ALLOC + SHF_EXECINSTR + SHF_ARM_NOREAD },
   { NULL,			      0, 0, 0,			0 }
 };
 
 static bfd_boolean
-arm_elf_section_flags (flagword * flags, const Elf_Internal_Shdr * hdr)
+arm_elf_section_flags (flagword *flags, const Elf_Internal_Shdr * hdr)
 {
   if (hdr->sh_flags & SHF_ARM_NOREAD)
-    * flags |= SEC_ELF_NOREAD;
+    *flags |= SEC_ELF_NOREAD;
   return TRUE;
 }
 
@@ -16182,7 +16184,7 @@ arm_elf_lookup_section_flags (char *flag_name)
   if (!strcmp (flag_name, "SHF_ARM_NOREAD"))
     return SHF_ARM_NOREAD;
 
-  return 0;
+  return SEC_NO_FLAGS;
 }
 
 #define ELF_ARCH			bfd_arch_arm
