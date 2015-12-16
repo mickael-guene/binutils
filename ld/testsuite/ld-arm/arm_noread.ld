@@ -1,4 +1,4 @@
-/* Script for ld testsuite */
+/* Script for ld testsuite.  */
 OUTPUT_ARCH(arm)
 ENTRY(_start)
 MEMORY
