@@ -3,8 +3,8 @@ OUTPUT_ARCH(arm)
 ENTRY(_start)
 MEMORY
 {
- read_memory   (rx)   : ORIGIN = 0x00008000, LENGTH = 8M
- noread_memory (!rx)  : ORIGIN = 0x00800000, LENGTH = 8M
+ read_memory   (rx)   : ORIGIN = 0x00008000, LENGTH = 4M
+ noread_memory (!rx)  : ORIGIN = 0x00800000, LENGTH = 4M
 }
 SECTIONS
 {
