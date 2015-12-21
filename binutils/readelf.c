@@ -5003,7 +5003,8 @@ get_elf_section_flags (bfd_vma sh_flags)
       /* Generic.  */
       /* 18 */ { STRING_COMMA_LEN ("EXCLUDE") },
       /* SPARC specific.  */
-      /* 19 */ { STRING_COMMA_LEN ("ORDERED") }
+      /* 19 */ { STRING_COMMA_LEN ("ORDERED") },
+      /* 20 */ { STRING_COMMA_LEN ("NOREAD") }
     };
 
   if (do_section_details)
@@ -5059,7 +5060,10 @@ get_elf_section_flags (bfd_vma sh_flags)
 		      }
 #endif
 		  break;
-
+		case EM_ARM:
+		  if (flag == SHF_ARM_NOREAD)
+		    sindex = 20;
+		  break;
 		case EM_386:
 		case EM_486:
 		case EM_X86_64:
