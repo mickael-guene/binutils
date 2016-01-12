@@ -113,6 +113,9 @@ extern bfd_boolean tc_start_label_without_colon (void);
 /* We also need to mark assembler created symbols:  */
 #define tc_frob_fake_label(S) arm_frob_label (S)
 
+#define md_elf_section_letter          arm_elf_section_letter
+extern bfd_vma arm_elf_section_letter (int, char **);
+
 #ifdef OBJ_ELF
 #define md_end arm_md_end
 extern void arm_md_end (void);
