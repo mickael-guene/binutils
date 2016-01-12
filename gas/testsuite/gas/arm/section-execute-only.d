@@ -23,5 +23,5 @@ Section Headers:
        \[00000003\]: WRITE, ALLOC
   \[ 4\] .text.foo
        PROGBITS        00000000 000034 000010 00   0   0  4
-       \[20000006\]: ALLOC, EXEC, NOREAD
+       \[20000006\]: ALLOC, EXEC, ARM_NOREAD
 #pass
