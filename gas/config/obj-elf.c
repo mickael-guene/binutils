@@ -677,9 +677,9 @@ obj_elf_change_section (const char *name,
 	    ;
 #endif
 #ifdef TC_ARM
-         else if (attr == (SHF_EXECINSTR | SHF_ARM_NOREAD | SHF_ALLOC))
-           /* ARM can have code section with SHF_ARM_NOREAD attribute.  */
-           ;
+	  else if (attr == (SHF_EXECINSTR | SHF_ARM_NOREAD | SHF_ALLOC))
+	    /* ARM can have code section with SHF_ARM_NOREAD attribute.  */
+	    ;
 #endif
 	  else
 	    {
