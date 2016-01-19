@@ -5004,7 +5004,7 @@ get_elf_section_flags (bfd_vma sh_flags)
       /* 18 */ { STRING_COMMA_LEN ("EXCLUDE") },
       /* SPARC specific.  */
       /* 19 */ { STRING_COMMA_LEN ("ORDERED") },
-      /* 20 */ { STRING_COMMA_LEN ("NOREAD") }
+      /* 20 */ { STRING_COMMA_LEN ("ARM_NOREAD") }
     };
 
   if (do_section_details)
