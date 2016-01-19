@@ -5127,6 +5127,9 @@ get_elf_section_flags (bfd_vma sh_flags)
 		   || elf_header.e_machine == EM_K1OM)
 		  && flag == SHF_X86_64_LARGE)
 		*p = 'l';
+	      else if (elf_header.e_machine == EM_ARM
+		       && flag == SHF_ARM_NOREAD)
+		  *p = 'y';
 	      else if (flag & SHF_MASKOS)
 		{
 		  *p = 'o';
@@ -5661,6 +5664,11 @@ process_section_headers (FILE * file)
 	  || elf_header.e_machine == EM_K1OM)
 	printf (_("Key to Flags:\n\
   W (write), A (alloc), X (execute), M (merge), S (strings), l (large)\n\
+  I (info), L (link order), G (group), T (TLS), E (exclude), x (unknown)\n\
+  O (extra OS processing required) o (OS specific), p (processor specific)\n"));
+      else if (elf_header.e_machine == EM_ARM)
+	printf (_("Key to Flags:\n\
+  W (write), A (alloc), X (execute), M (merge), S (strings), y (noread)\n\
   I (info), L (link order), G (group), T (TLS), E (exclude), x (unknown)\n\
   O (extra OS processing required) o (OS specific), p (processor specific)\n"));
       else
