@@ -6008,17 +6008,23 @@ process_section_headers (FILE * file)
       /* The ordering of the letters shown here matches the ordering of the
 	 corresponding SHF_xxx values, and hence the order in which these
 	 letters will be displayed to the user.  */
-      printf (_("Key to Flags:\n\
-  W (write), A (alloc), X (execute), M (merge), S (strings), I (info),\n\
-  L (link order), O (extra OS processing required), G (group), T (TLS),\n\
-  C (compressed), x (unknown), o (OS specific), E (exclude),\n"));
       if (elf_header.e_machine == EM_X86_64
 	  || elf_header.e_machine == EM_L1OM
 	  || elf_header.e_machine == EM_K1OM)
-	printf (_("l (large), "));
+	printf (_("Key to Flags:\n\
+  W (write), A (alloc), X (execute), M (merge), S (strings), l (large)\n\
+  I (info), L (link order), G (group), T (TLS), E (exclude), x (unknown)\n\
+  O (extra OS processing required) o (OS specific), p (processor specific)\n"));
       else if (elf_header.e_machine == EM_ARM)
-	printf (_("y (noread), "));
-      printf ("p (processor specific)\n");
+	printf (_("Key to Flags:\n\
+  W (write), A (alloc), X (execute), M (merge), S (strings), y (noread)\n\
+  I (info), L (link order), G (group), T (TLS), E (exclude), x (unknown)\n\
+  O (extra OS processing required) o (OS specific), p (processor specific)\n"));
+      else
+	printf (_("Key to Flags:\n\
+  W (write), A (alloc), X (execute), M (merge), S (strings)\n\
+  I (info), L (link order), G (group), T (TLS), E (exclude), x (unknown)\n\
+  O (extra OS processing required) o (OS specific), p (processor specific)\n"));
     }
 
   return 1;
