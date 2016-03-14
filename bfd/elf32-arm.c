@@ -8215,7 +8215,7 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 
     htab = elf32_arm_hash_table (info);
     if (htab->fdpic_p)
-      elf_elfheader (output_bfd)->e_flags |= EF_ARM_FDPIC;
+      elf_elfheader (output_bfd)->e_ident[EI_OSABI] = ELFOSABI_ARM_FDPIC;
   }
   eh = (struct elf32_arm_link_hash_entry *) h;
   sgot = globals->root.sgot;
@@ -11422,7 +11422,7 @@ elf32_arm_copy_private_bfd_data (bfd *ibfd, bfd *obfd)
   _bfd_elf_copy_obj_attributes (ibfd, obfd);
 
   /* Correctly propagate stack segment for fdpic target */
-  if (in_flags & EF_ARM_FDPIC) {
+  if (elf_elfheader (ibfd)->e_ident[EI_OSABI] == ELFOSABI_ARM_FDPIC) {
     unsigned i;
 
 	if (! elf_tdata (ibfd) || ! elf_tdata (ibfd)->phdr
@@ -12429,10 +12429,10 @@ elf32_arm_print_private_bfd_data (bfd *abfd, void * ptr)
   if (flags & EF_ARM_PIC)
     fprintf (file, _(" [position independent]"));
 
-    if (flags & EF_ARM_FDPIC)
+  if (elf_elfheader (abfd)->e_ident[EI_OSABI] == ELFOSABI_ARM_FDPIC)
     fprintf (file, _(" [FDPIC abi supplement]"));
 
-  flags &= ~ (EF_ARM_RELEXEC | EF_ARM_HASENTRY | EF_ARM_PIC | EF_ARM_FDPIC);
+  flags &= ~ (EF_ARM_RELEXEC | EF_ARM_HASENTRY | EF_ARM_PIC);
 
   if (flags)
     fprintf (file, _("<Unrecognised flag bits set>"));

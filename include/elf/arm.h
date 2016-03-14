@@ -36,7 +36,6 @@
 #define EF_ARM_SOFT_FLOAT  0x200
 #define EF_ARM_VFP_FLOAT   0x400
 #define EF_ARM_MAVERICK_FLOAT 0x800
-#define EF_ARM_FDPIC       0x1000
 
 /* Frame unwind information */
 #define PT_ARM_EXIDX (PT_LOPROC + 1)
