@@ -2017,12 +2017,6 @@ decode_ARM_machine_flags (unsigned e_flags, char buf[])
       e_flags &= ~ EF_ARM_PIC;
     }
 
-  if (e_flags & EF_ARM_FDPIC)
-    {
-      strcat (buf, ", FDPIC abi supplement");
-      e_flags &= ~ EF_ARM_FDPIC;
-    }
-
   /* Now handle EABI specific flags.  */
   switch (eabi)
     {
@@ -2650,6 +2644,7 @@ get_osabi_name (unsigned int osabi)
 	  case EM_ARM:
 	    switch (osabi)
 	      {
+	      case ELFOSABI_ARM_FDPIC:  return "ARM FDPIC";
 	      case ELFOSABI_ARM:	return "ARM";
 	      default:
 		break;
