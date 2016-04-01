@@ -64,10 +64,6 @@
 #include "elf/nios2.h"
 #endif
 
-#ifdef TC_ARM
-#include "elf/arm.h"
-#endif
-
 static void obj_elf_line (int);
 static void obj_elf_size (int);
 static void obj_elf_type (int);
@@ -635,7 +631,7 @@ obj_elf_change_section (const char *name,
 	    }
 	}
 
-      if (old_sec == NULL && (attr & ~ssect->attr) != 0)
+      if (old_sec == NULL && ((attr & ~(SHF_MASKOS | SHF_MASKPROC)) & ~ssect->attr) != 0)
 	{
 	  /* As a GNU extension, we permit a .note section to be
 	     allocatable.  If the linker sees an allocatable .note
@@ -674,11 +670,6 @@ obj_elf_change_section (const char *name,
 		       || ssect->type == SHT_FINI_ARRAY
 		       || ssect->type == SHT_PREINIT_ARRAY))
 	    /* RX init/fini arrays can and should have the "awx" attributes set.  */
-	    ;
-#endif
-#ifdef TC_ARM
-	  else if (attr == (SHF_EXECINSTR | SHF_ARM_NOREAD | SHF_ALLOC))
-	    /* ARM can have code section with SHF_ARM_NOREAD attribute.  */
 	    ;
 #endif
 	  else
@@ -813,14 +804,26 @@ obj_elf_parse_section_letters (char *str, size_t len, bfd_boolean *is_clone)
 	    }
 	default:
 	  {
-	    char *bad_msg = _("unrecognized .section attribute: want a,e,w,x,M,S,G,T");
+	    char *bad_msg = _("unrecognized .section attribute: want a,e,w,x,M,S,G,T or number");
 #ifdef md_elf_section_letter
 	    bfd_vma md_attr = md_elf_section_letter (*str, &bad_msg);
 	    if (md_attr != (bfd_vma) -1)
 	      attr |= md_attr;
 	    else
 #endif
-	      as_fatal ("%s", bad_msg);
+            if (ISDIGIT (*str))
+              {
+                char * end;
+
+                attr |= strtoul (str, & end, 0);
+                /* Update str and len, allowing for the fact that
+                    we will execute str++ and len-- below.  */
+                end --;
+                len -= (end - str);
+                str = end;
+               }
+             else
+               as_fatal ("%s", bad_msg);
 	  }
 	  break;
 	}
@@ -853,6 +856,17 @@ obj_elf_section_type (char *str, size_t len, bfd_boolean warn)
       return md_type;
   }
 #endif
+
+  if (ISDIGIT (*str))
+    {
+      char * end;
+      int type = strtoul (str, & end, 0);
+
+      if (warn && (size_t) (end - str) != len)
+       as_warn (_("extraneous characters at end of numeric section type"));
+
+      return type;
+    }
 
   if (warn)
     as_warn (_("unrecognized section type"));
@@ -1032,9 +1046,17 @@ obj_elf_section (int push)
 	      else if (c == '@' || c == '%')
 		{
 		  beg = ++input_line_pointer;
-		  c = get_symbol_end ();
-		  *input_line_pointer = c;
-		  type = obj_elf_section_type (beg, input_line_pointer - beg, TRUE);
+
+                  if (ISDIGIT (* input_line_pointer))
+                    {
+                      type = strtoul (input_line_pointer, & input_line_pointer, 0);
+                    }
+                  else
+                    {
+		      c = get_symbol_end ();
+		      *input_line_pointer = c;
+		      type = obj_elf_section_type (beg, input_line_pointer - beg, TRUE);
+                    }
 		}
 	      else
 		input_line_pointer = save;

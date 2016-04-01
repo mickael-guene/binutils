@@ -1,0 +1,112 @@
+diff --git a/gas/config/obj-elf.c b/gas/config/obj-elf.c
+index 6d6d5f3..f4726ff 100644
+--- a/gas/config/obj-elf.c
++++ b/gas/config/obj-elf.c
+@@ -64,10 +64,6 @@
+ #include "elf/nios2.h"
+ #endif
+ 
+-#ifdef TC_ARM
+-#include "elf/arm.h"
+-#endif
+-
+ static void obj_elf_line (int);
+ static void obj_elf_size (int);
+ static void obj_elf_type (int);
+@@ -678,11 +674,6 @@ obj_elf_change_section (const char *name,
+ 	    /* RX init/fini arrays can and should have the "awx" attributes set.  */
+ 	    ;
+ #endif
+-#ifdef TC_ARM
+-	  else if (attr == (SHF_EXECINSTR | SHF_ARM_NOREAD | SHF_ALLOC))
+-	    /* ARM can have code section with SHF_ARM_NOREAD attribute.  */
+-	    ;
+-#endif
+ 	  else
+ 	    {
+ 	      if (group_name == NULL)
+diff --git a/gas/config/tc-arm.c b/gas/config/tc-arm.c
+index 055e525..be6436e 100644
+--- a/gas/config/tc-arm.c
++++ b/gas/config/tc-arm.c
+@@ -24094,16 +24094,6 @@ arm_fix_adjustable (fixS * fixP)
+ #endif /* defined (OBJ_ELF) || defined (OBJ_COFF) */
+ 
+ #ifdef OBJ_ELF
+-bfd_vma
+-arm_elf_section_letter (int letter, char **ptrmsg)
+-{
+-  if (letter == 'y')
+-    return SHF_ARM_NOREAD;
+-
+-  *ptrmsg = _("unrecognized .section attribute: want a,e,w,x,y,M,S,G,T");
+-  return -1;
+-}
+-
+ const char *
+ elf32_arm_target_format (void)
+ {
+diff --git a/gas/config/tc-arm.h b/gas/config/tc-arm.h
+index 749629c..319b2c2 100644
+--- a/gas/config/tc-arm.h
++++ b/gas/config/tc-arm.h
+@@ -114,9 +114,6 @@ extern bfd_boolean tc_start_label_without_colon (void);
+ #define tc_frob_fake_label(S) arm_frob_label (S)
+ 
+ #ifdef OBJ_ELF
+-#define md_elf_section_letter arm_elf_section_letter
+-extern bfd_vma arm_elf_section_letter (int, char **);
+-
+ #define md_end arm_md_end
+ extern void arm_md_end (void);
+ bfd_boolean arm_is_eabi (void);
+diff --git a/gas/doc/c-arm.texi b/gas/doc/c-arm.texi
+index 886b024..8679424 100644
+--- a/gas/doc/c-arm.texi
++++ b/gas/doc/c-arm.texi
+@@ -23,7 +23,6 @@
+ * ARM Opcodes::              Opcodes
+ * ARM Mapping Symbols::      Mapping Symbols
+ * ARM Unwinding Tutorial::   Unwinding
+-* ARM Section Attribute::    Section Attribute
+ @end menu
+ 
+ @node ARM Options
+@@ -1239,14 +1238,3 @@ know more about the object-file format used to represent unwind
+ information, you may consult the @cite{Exception Handling ABI for the
+ ARM Architecture} available from @uref{http://infocenter.arm.com}.
+ 
+-@node ARM Section Attribute
+-@section Section Attribute
+-
+-@cindex ARM section attribute
+-@table @code
+-@item y
+-This letter specifies a text section with NOREAD attribute for
+-hardware that supports execute-only memory region.  If not supported
+-by hardware a section with this attribute will be treated as normal
+-text section.
+-@end table
+diff --git a/ld/testsuite/ld-arm/arm-elf.exp b/ld/testsuite/ld-arm/arm-elf.exp
+index 258a3ea..a2082a8 100644
+--- a/ld/testsuite/ld-arm/arm-elf.exp
++++ b/ld/testsuite/ld-arm/arm-elf.exp
+@@ -312,18 +312,6 @@ set armelftests_nonacl {
+     {"TLS shared library gdesc local" "--no-fix-arm1176 -shared -T arm-dyn.ld" "" "" {tls-lib-loc.s}
+      {{objdump -fdw tls-lib-loc.d} {objdump -Rw tls-lib-loc.r}}
+      "tls-lib-loc.so"}
+-    {"PF_R not present when one noread section" "-static -T arm.ld" "" "" {thumb1-noread-present-one-section.s}
+-     {{readelf -l thumb1-noread-present-one-section.d}}
+-     "thumb1-noread-present-one-section"}
+-    {"PF_R not present when two noread sections" "-static -T arm.ld" "" "" {thumb1-noread-present-two-section.s}
+-     {{readelf -l thumb1-noread-present-two-section.d}}
+-     "thumb1-noread-present-two-section"}
+-    {"PF_R present when mixing noread section with read section" "-static -T arm.ld" "" "" {thumb1-noread-not-present-mixing-two-section.s}
+-     {{readelf -l thumb1-noread-not-present-mixing-two-section.d}}
+-     "thumb1-noread-not-present-mixing-two-section"}
+-    {"Match SHF_ARM_NOREAD with INPUT_SECTION_FLAGS directive" "-static -T arm_noread.ld" "" "" {thumb1-input-section-flag-match.s}
+-     {{readelf -l thumb1-input-section-flag-match.d}}
+-     "thumb1-noread-not-present-mixing-two-section"}
+ }
+ 
+ if { ![istarget "arm*-*-nacl*"] } {
