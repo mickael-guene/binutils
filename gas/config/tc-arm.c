@@ -5748,17 +5748,25 @@ static int
 parse_half (char **str)
 {
   char * p;
+  int off = 9;
 
   p = *str;
   skip_past_char (&p, '#');
   if (strncasecmp (p, ":lower16:", 9) == 0)
     inst.reloc.type = BFD_RELOC_ARM_MOVW;
-  else if (strncasecmp (p, ":upper16:", 9) == 0)
+  else if (strncasecmp (p, ":lower16_brel:", 14) == 0) {
+    inst.reloc.type = BFD_RELOC_ARM_MOVW_BREL;
+    off = 14;
+  } else if (strncasecmp (p, ":upper16:", 9) == 0)
     inst.reloc.type = BFD_RELOC_ARM_MOVT;
+  else if (strncasecmp (p, ":upper16_brel:", 14) == 0) {
+    inst.reloc.type = BFD_RELOC_ARM_MOVT_BREL;
+    off = 14;
+  }
 
   if (inst.reloc.type != BFD_RELOC_UNUSED)
     {
-      p += 9;
+      p += off;
       skip_whitespace (p);
     }
 
@@ -12085,10 +12093,20 @@ do_t_mov16 (void)
       constraint (top, _(":lower16: not allowed this instruction"));
       inst.reloc.type = BFD_RELOC_ARM_THUMB_MOVW;
     }
+  else if (inst.reloc.type == BFD_RELOC_ARM_MOVW_BREL)
+    {
+      constraint (top, _(":lower16: not allowed this instruction"));
+      inst.reloc.type = BFD_RELOC_ARM_THUMB_MOVW_BREL;
+    }
   else if (inst.reloc.type == BFD_RELOC_ARM_MOVT)
     {
       constraint (!top, _(":upper16: not allowed this instruction"));
       inst.reloc.type = BFD_RELOC_ARM_THUMB_MOVT;
+    }
+  else if (inst.reloc.type == BFD_RELOC_ARM_MOVT_BREL)
+    {
+      constraint (!top, _(":upper16: not allowed this instruction"));
+      inst.reloc.type = BFD_RELOC_ARM_THUMB_MOVT_BREL;
     }
 
   Rd = inst.operands[0].reg;
@@ -23752,8 +23770,12 @@ md_apply_fix (fixS *	fixP,
 
     case BFD_RELOC_ARM_MOVW:
     case BFD_RELOC_ARM_MOVT:
+    case BFD_RELOC_ARM_MOVW_BREL:
+    case BFD_RELOC_ARM_MOVT_BREL:
     case BFD_RELOC_ARM_THUMB_MOVW:
     case BFD_RELOC_ARM_THUMB_MOVT:
+    case BFD_RELOC_ARM_THUMB_MOVW_BREL:
+    case BFD_RELOC_ARM_THUMB_MOVT_BREL:
       if (fixP->fx_done || !seg->use_rela_p)
 	{
 	  /* REL format relocations are limited to a 16-bit addend.  */
@@ -23764,13 +23786,17 @@ md_apply_fix (fixS *	fixP,
 				_("offset out of range"));
 	    }
 	  else if (fixP->fx_r_type == BFD_RELOC_ARM_MOVT
-		   || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVT)
+		   || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVT
+		   || fixP->fx_r_type == BFD_RELOC_ARM_MOVT_BREL
+		   || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVT_BREL)
 	    {
 	      value >>= 16;
 	    }
 
 	  if (fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVW
-	      || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVT)
+	      || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVT
+	      || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVW_BREL
+	      || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVT_BREL)
 	    {
 	      newval = get_thumb32_insn (buf);
 	      newval &= 0xfbf08f00;
@@ -24194,6 +24220,10 @@ tc_gen_reloc (asection *section, fixS *fixp)
     case BFD_RELOC_ARM_THUMB_ALU_ABS_G1_NC:
     case BFD_RELOC_ARM_THUMB_ALU_ABS_G2_NC:
     case BFD_RELOC_ARM_THUMB_ALU_ABS_G3_NC:
+    case BFD_RELOC_ARM_MOVW_BREL:
+    case BFD_RELOC_ARM_MOVT_BREL:
+    case BFD_RELOC_ARM_THUMB_MOVW_BREL:
+    case BFD_RELOC_ARM_THUMB_MOVT_BREL:
       code = fixp->fx_r_type;
       break;
 
@@ -24493,7 +24523,11 @@ arm_fix_adjustable (fixS * fixP)
       || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVW
       || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVT
       || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVW_PCREL
-      || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVT_PCREL)
+      || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVT_PCREL
+      || fixP->fx_r_type == BFD_RELOC_ARM_MOVW_BREL
+      || fixP->fx_r_type == BFD_RELOC_ARM_MOVT_BREL
+      || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVW_BREL
+      || fixP->fx_r_type == BFD_RELOC_ARM_THUMB_MOVT_BREL)
     return FALSE;
 
   /* BFD_RELOC_ARM_THUMB_ALU_ABS_Gx_NC relocations have VERY limited
