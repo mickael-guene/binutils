@@ -9181,6 +9181,21 @@ identify_add_or_sub (bfd_vma insn)
   return 0;
 }
 
+static bfd_vma
+output_segment_base_address (bfd *abfd, asection *section)
+{
+  struct elf_segment_map *m;
+  unsigned int i;
+  unsigned int j;
+
+  for (m = elf_seg_map (abfd), i = 0; m != NULL; m = m->next, i++)
+    for (j = 0; j < m->count; j++)
+      if (strcmp(section->name, m->sections[j]->name) == 0)
+	return m->sections[0]->vma;
+
+  return 0;
+}
+
 /* Perform a relocation as part of a final link.  */
 
 static bfd_reloc_status_type
@@ -11003,6 +11018,10 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 	if (r_type == R_ARM_THM_MOVW_PREL_NC || r_type == R_ARM_THM_MOVT_PREL)
 	  value -= (input_section->output_section->vma
 		    + input_section->output_offset + rel->r_offset);
+
+	if (r_type == R_ARM_THM_MOVW_BREL_NC || r_type == R_ARM_THM_MOVW_BREL || r_type == R_ARM_THM_MOVT_BREL) {
+	  value -= output_segment_base_address(output_bfd, sym_sec->output_section);
+	}
 
 	if (r_type == R_ARM_THM_MOVW_BREL && value >= 0x10000)
 	  return bfd_reloc_overflow;
