@@ -11020,7 +11020,11 @@ elf32_arm_final_link_relocate (reloc_howto_type *           howto,
 		    + input_section->output_offset + rel->r_offset);
 
 	if (r_type == R_ARM_THM_MOVW_BREL_NC || r_type == R_ARM_THM_MOVW_BREL || r_type == R_ARM_THM_MOVT_BREL) {
-	  value -= output_segment_base_address(output_bfd, sym_sec->output_section);
+	  /* detect weak undef symbol */
+	  if (h && h->root.type == bfd_link_hash_undefweak && !sym_sec)
+	    (*_bfd_error_handler) (_("Unable to solve %s since <%s> is an undefined weak symbol"), howto->name, sym_name);
+	  else
+	    value -= output_segment_base_address(output_bfd, sym_sec->output_section);
 	}
 
 	if (r_type == R_ARM_THM_MOVW_BREL && value >= 0x10000)
