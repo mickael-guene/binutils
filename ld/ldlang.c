@@ -2400,15 +2400,15 @@ lang_add_section (lang_statement_list_type *ptr,
   /* If SEC_READONLY is not set in the input section, then clear
      it from the output section.  */
   output->bfd_section->flags &= flags | ~SEC_READONLY;
-  /* SEC_ELF_NOREAD use same logic as SEC_READONLY */
-  output->bfd_section->flags &= flags | ~SEC_ELF_NOREAD;
+  /* SEC_ELF_PURECODE use same logic as SEC_READONLY */
+  output->bfd_section->flags &= flags | ~SEC_ELF_PURECODE;
 
   if (output->bfd_section->linker_has_input)
     {
       /* Only set SEC_READONLY flag on the first input section.  */
       flags &= ~ SEC_READONLY;
-      /* SEC_ELF_NOREAD use same logic as SEC_READONLY */
-      flags &= ~ SEC_ELF_NOREAD;
+      /* SEC_ELF_PURECODE use same logic as SEC_READONLY */
+      flags &= ~ SEC_ELF_PURECODE;
 
       /* Keep SEC_MERGE and SEC_STRINGS only if they are the same.  */
       if ((output->bfd_section->flags & (SEC_MERGE | SEC_STRINGS))
